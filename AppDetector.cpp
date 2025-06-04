@@ -5,7 +5,7 @@
 #include <algorithm>
 
 AppDetector::AppDetector() {
-    // Initialize the list of apps to monitor
+    // Initialize the list of apps to monitor - Updated list
     apps = {
         {"Brave Browser", "brave.exe", false},
         {"Visual Studio Code", "Code.exe", false},
@@ -28,7 +28,7 @@ std::string wstringToString(const std::wstring& wstr) {
 
 bool AppDetector::isProcessRunning(const std::string& processName) const {
     HANDLE hProcessSnap;
-    PROCESSENTRY32 pe32;
+    PROCESSENTRY32W pe32;  // Use PROCESSENTRY32W explicitly for wide chars
     
     // Take a snapshot of all processes in the system
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -36,18 +36,18 @@ bool AppDetector::isProcessRunning(const std::string& processName) const {
         return false;
     }
     
-    pe32.dwSize = sizeof(PROCESSENTRY32);
+    pe32.dwSize = sizeof(PROCESSENTRY32W);  // Use wide version
     
     // Retrieve information about the first process
-    if (!Process32First(hProcessSnap, &pe32)) {
+    if (!Process32FirstW(hProcessSnap, &pe32)) {  // Use wide version
         CloseHandle(hProcessSnap);
         return false;
     }
     
     // Walk through the snapshot of processes
     do {
-        // Convert wide string to narrow string
-        std::wstring wideProcessName(pe32.szExeFile);
+        // Convert wide string to narrow string 
+        std::wstring wideProcessName(pe32.szExeFile, wcslen(pe32.szExeFile));
         std::string currentProcess = wstringToString(wideProcessName);
         
         // Convert to lowercase for case-insensitive comparison
@@ -62,7 +62,7 @@ bool AppDetector::isProcessRunning(const std::string& processName) const {
             CloseHandle(hProcessSnap);
             return true;
         }
-    } while (Process32Next(hProcessSnap, &pe32));
+    } while (Process32NextW(hProcessSnap, &pe32));  // Use wide version
     
     CloseHandle(hProcessSnap);
     return false;
