@@ -10,6 +10,7 @@
 #include "WebServer.h"
 #include "OverlayWindow.h"
 #include "ThoughtsManager.h"
+#include "config.h"
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -48,8 +49,8 @@ std::wstring extractPath(const std::string& url) {
     return stringToWstring(path);
 }
 
-// Function to send JSON using Windows HTTP API
-bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl) {
+// Function to send JSON using Windows HTTP API with API key
+bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl, const std::string& apiKey) {
     HINTERNET hSession = NULL;
     HINTERNET hConnect = NULL;
     HINTERNET hRequest = NULL;
@@ -83,11 +84,12 @@ bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl) {
                                             WINHTTP_FLAG_SECURE);
                 
                 if (hRequest) {
-                    // Add headers
-                    LPCWSTR headers = L"Content-Type: application/json\r\n";
+                    // Create headers with API key
+                    std::wstring apiKeyHeader = L"X-API-Key: " + stringToWstring(apiKey) + L"\r\n";
+                    std::wstring headers = L"Content-Type: application/json\r\n" + apiKeyHeader;
                     
                     BOOL headersAdded = WinHttpAddRequestHeaders(hRequest, 
-                                                               headers, 
+                                                               headers.c_str(), 
                                                                -1, 
                                                                WINHTTP_ADDREQ_FLAG_ADD);
                     
@@ -113,6 +115,9 @@ bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl) {
                                                       &statusCodeSize, 
                                                       WINHTTP_NO_HEADER_INDEX)) {
                                     success = (statusCode >= 200 && statusCode < 300);
+                                    if (!success) {
+                                        std::cout << "[VERCEL] HTTP Status: " << statusCode << std::endl;
+                                    }
                                 }
                             }
                         }
@@ -143,12 +148,26 @@ int main() {
     std::cout << "========================================" << std::endl;
     std::cout << "Monitoring: Brave, VS Code, PowerShell, Android Studio, Docker, Postman, Visual Studio" << std::endl;
     std::cout << "Local Server: http://localhost:8081" << std::endl;
-    std::cout << "Vercel API: Pushing every 2 seconds (Windows HTTP)" << std::endl;
+    std::cout << "Vercel API: Pushing every 2 seconds (Secured with API key)" << std::endl;
     std::cout << "Press Ctrl+C to exit" << std::endl;
     std::cout << std::endl;
     
-    // REPLACE THIS WITH YOUR ACTUAL VERCEL URL
-    const std::string VERCEL_API_URL = "https://your-project.vercel.app/api/status";
+    // Load configuration from .env file
+    auto env = Config::loadEnv();
+    const std::string VERCEL_API_URL = Config::getEnv(env, "VERCEL_API_URL");
+    const std::string API_KEY = Config::getEnv(env, "API_KEY");
+    
+    // Validate configuration
+    if (VERCEL_API_URL.empty() || API_KEY.empty()) {
+        std::cerr << "ERROR: Missing configuration!" << std::endl;
+        std::cerr << "Please copy .env.example to .env and fill in your values." << std::endl;
+        std::cerr << "Required: VERCEL_API_URL and API_KEY" << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Configuration loaded from .env file" << std::endl;
+    std::cout << "API URL: " << VERCEL_API_URL << std::endl;
+    std::cout << std::endl;
     
     // Initialize components
     AppDetector detector;
@@ -174,7 +193,7 @@ int main() {
     std::cout << "Starting Vercel API push loop..." << std::endl;
     
     // Start Vercel API push loop (every 2 seconds)
-    std::thread vercelPushThread([&detector, &thoughtsManager, &VERCEL_API_URL]() {
+    std::thread vercelPushThread([&detector, &thoughtsManager, &VERCEL_API_URL, &API_KEY]() {
         while (true) {
             // Detect running apps
             detector.detectRunningApps();
@@ -205,11 +224,11 @@ int main() {
             
             std::string jsonData = json.str();
             
-            // Send to Vercel API
-            if (sendToVercelAPI(jsonData, VERCEL_API_URL)) {
+            // Send to Vercel API with API key
+            if (sendToVercelAPI(jsonData, VERCEL_API_URL, API_KEY)) {
                 std::cout << "[VERCEL] ✓ Sent: " << jsonData << std::endl;
             } else {
-                std::cout << "[VERCEL] ✗ Failed to send data" << std::endl;
+                std::cout << "[VERCEL] ✗ Failed to send data (check API key)" << std::endl;
             }
             
             // Wait 2 seconds

@@ -1,0 +1,15 @@
+# Environment files
+.env
+
+# Build files
+*.exe
+*.obj
+*.o
+
+# VS Code
+.vscode/
+!.vscode/tasks.json
+
+# Windows
+Thumbs.db
+*.tmp
