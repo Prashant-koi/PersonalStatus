@@ -7,12 +7,13 @@
 AppDetector::AppDetector() {
     // Initialize the list of apps to monitor
     apps = {
-        {"Visual Studio Code", "Code.exe", false},
         {"Brave Browser", "brave.exe", false},
-        {"Blender", "blender.exe", false},
-        {"Steam", "steam.exe", false},
-        {"Spotify", "Spotify.exe", false},
-        {"Discord", "Discord.exe", false}
+        {"Visual Studio Code", "Code.exe", false},
+        {"PowerShell", "powershell.exe", false},
+        {"Android Studio", "studio64.exe", false},
+        {"Docker Desktop", "Docker Desktop.exe", false},
+        {"Postman", "Postman.exe", false},
+        {"Visual Studio", "devenv.exe", false}
     };
 }
 

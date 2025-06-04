@@ -22,21 +22,24 @@ std::string WebServer::generateJSON() const {
     appDetector->detectRunningApps();
     auto runningApps = appDetector->getRunningApps();
     
+    // Get top 2 running apps
+    std::vector<std::string> activeApps;
+    for (const auto& app : runningApps) {
+        if (activeApps.size() < 2) {
+            activeApps.push_back(app.name);
+        }
+    }
+    
     std::ostringstream json;
-    json << "{\"apps\":{";
-    json << "\"vscode\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                         [](const auto& app) { return app.processName == "Code.exe"; }) != runningApps.end() ? "true" : "false") << ",";
-    json << "\"brave\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                        [](const auto& app) { return app.processName == "brave.exe"; }) != runningApps.end() ? "true" : "false") << ",";
-    json << "\"blender\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                          [](const auto& app) { return app.processName == "blender.exe"; }) != runningApps.end() ? "true" : "false") << ",";
-    json << "\"steam\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                        [](const auto& app) { return app.processName == "steam.exe"; }) != runningApps.end() ? "true" : "false") << ",";
-    json << "\"spotify\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                          [](const auto& app) { return app.processName == "Spotify.exe"; }) != runningApps.end() ? "true" : "false") << ",";
-    json << "\"discord\":" << (std::find_if(runningApps.begin(), runningApps.end(), 
-                                          [](const auto& app) { return app.processName == "Discord.exe"; }) != runningApps.end() ? "true" : "false");
-    json << "}}";
+    json << "{";
+    json << "\"thoughts\":\"" << getCurrentThoughts() << "\",";
+    json << "\"busy\":" << (isBusy() ? "true" : "false") << ",";
+    json << "\"activeApps\":[";
+    for (size_t i = 0; i < activeApps.size(); ++i) {
+        json << "\"" << activeApps[i] << "\"";
+        if (i < activeApps.size() - 1) json << ",";
+    }
+    json << "]}";
     
     return json.str();
 }

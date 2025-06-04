@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build C++",
+      "label": "build GUI App",
       "type": "shell",
       "command": "g++",
       "args": [
@@ -10,15 +10,21 @@
         "-std=c++17",
         "main.cpp",
         "AppDetector.cpp",
+        "WebServer.cpp",
+        "OverlayWindow.cpp",
         "-o",
-        "main.exe"
+        "overlay_app.exe",
+        "-lws2_32",
+        "-lgdi32",
+        "-luser32",
+        "-lcomctl32"
       ],
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "problemMatcher": ["$gcc"],
-      "detail": "Compiled with g++ (multi-file)"
+      "detail": "Compiled GUI overlay app"
     }
   ]
 }
