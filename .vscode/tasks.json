@@ -2,12 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build GUI App",
+      "label": "build with Windows HTTP",
       "type": "shell",
       "command": "g++",
       "args": [
         "-g",
         "-std=c++17",
+        "-DUNICODE",
+        "-D_UNICODE",
+        "-D_WIN32_WINNT=0x0601",
         "main.cpp",
         "AppDetector.cpp",
         "WebServer.cpp",
@@ -15,6 +18,7 @@
         "ThoughtsManager.cpp",
         "-o",
         "overlay_app.exe",
+        "-lwinhttp",
         "-lws2_32",
         "-lgdi32",
         "-luser32",
@@ -25,7 +29,26 @@
         "isDefault": true
       },
       "problemMatcher": ["$gcc"],
-      "detail": "Compiled GUI overlay app"
+      "detail": "Build with Windows HTTP API"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "C:/vcpkg/installed/x64-windows/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "windowsSdkVersion": "10.0.22000.0",
+      "compilerPath": "C:/mingw64/bin/g++.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
     }
   ]
 }
