@@ -1,16 +1,20 @@
 # Personal Status Monitor
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)](https://www.microsoft.com/windows)
+[![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
+
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
 
-## What It Does
+## 🎯 What It Does
 
 This app creates a desktop widget that:
-- Tracks your current thoughts (typed in real-time)
-- Monitors your busy/free status 
-- Detects which development apps you're using
-- Pushes this data to your portfolio website every 2 seconds
+- 📝 Tracks your current thoughts (typed in real-time)
+- 🟢 Monitors your busy/free status 
+- 🖥️ Detects which development apps you're using
+- 🚀 Pushes this data to your portfolio website every 2 seconds
 
-## Example Output
+## 📸 Example Output
 
 ### Desktop Widget
 When you run the app, you'll see a small overlay window where you can:
@@ -67,6 +71,12 @@ Your `/api/status` endpoint returns:
 ```
 
 ## Setup Instructions
+
+### Prerequisites
+- Windows 10/11
+- MinGW/GCC compiler
+- Next.js portfolio website
+- Vercel account (free tier works)
 
 ### 1. Clone and Configure
 
@@ -152,7 +162,7 @@ g++ -g -std=c++17 -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601 main.cpp AppDetecto
 ./overlay_app.exe
 ```
 
-## Features
+## ✨ Features
 
 - ✅ **Real-time thoughts sharing** - Type what you're thinking, visitors see it instantly
 - ✅ **Availability status** - Toggle between busy/free
@@ -160,15 +170,17 @@ g++ -g -std=c++17 -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601 main.cpp AppDetecto
 - ✅ **Secure API** - Protected with API key authentication
 - ✅ **Local web server** - Also serves data locally on port 8081
 - ✅ **Desktop widget** - Draggable, semi-transparent overlay window
+- ✅ **Environment configuration** - Easy setup with `.env` files
+- ✅ **Cross-platform friendly** - Designed for easy porting
 
-## Security
+## 🔒 Security
 
 - Your API key is private and stored in `.env` (not committed to git)
 - Only POST requests (updating status) require authentication
 - GET requests (viewing status) are public for portfolio visitors
 - Each person uses their own Vercel deployment and API key
 
-## Monitored Applications
+## 🎯 Monitored Applications
 
 - Brave Browser (`brave.exe`)
 - Visual Studio Code (`Code.exe`) 
@@ -178,11 +190,30 @@ g++ -g -std=c++17 -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601 main.cpp AppDetecto
 - Postman (`Postman.exe`)
 - Visual Studio (`devenv.exe`)
 
-Customize the monitored apps in [`AppDetector.cpp`](AppDetector.cpp).
+Want to monitor different apps? Customize the list in [`AppDetector.cpp`](AppDetector.cpp).
 
-## Requirements
 
-- Windows 10/11
-- MinGW/GCC compiler
-- Next.js portfolio website
-- Vercel account (free tier works)
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+4. **Test thoroughly**
+5. **Commit your changes**
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
+6. **Push to the branch**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open a Pull Request**
+
+
+⭐ **Star this repo if you find it useful!**
