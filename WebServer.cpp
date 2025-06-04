@@ -7,7 +7,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-WebServer::WebServer(int port) : port(port), appDetector(nullptr), running(false) {
+WebServer::WebServer(int port) : port(port), appDetector(nullptr), thoughtsManager(nullptr), running(false) {
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 }
@@ -16,8 +16,12 @@ void WebServer::setAppDetector(AppDetector* detector) {
     appDetector = detector;
 }
 
+void WebServer::setThoughtsManager(ThoughtsManager* manager) {
+    thoughtsManager = manager;
+}
+
 std::string WebServer::generateJSON() const {
-    if (!appDetector) return "{}";
+    if (!appDetector || !thoughtsManager) return "{}";
     
     appDetector->detectRunningApps();
     auto runningApps = appDetector->getRunningApps();
@@ -32,8 +36,8 @@ std::string WebServer::generateJSON() const {
     
     std::ostringstream json;
     json << "{";
-    json << "\"thoughts\":\"" << getCurrentThoughts() << "\",";
-    json << "\"busy\":" << (isBusy() ? "true" : "false") << ",";
+    json << "\"thoughts\":\"" << thoughtsManager->getCurrentThoughts() << "\",";
+    json << "\"busy\":" << (thoughtsManager->isBusy() ? "true" : "false") << ",";
     json << "\"activeApps\":[";
     for (size_t i = 0; i < activeApps.size(); ++i) {
         json << "\"" << activeApps[i] << "\"";

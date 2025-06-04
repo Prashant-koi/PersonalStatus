@@ -12,6 +12,7 @@
         "AppDetector.cpp",
         "WebServer.cpp",
         "OverlayWindow.cpp",
+        "ThoughtsManager.cpp",
         "-o",
         "overlay_app.exe",
         "-lws2_32",
