@@ -1,0 +1,107 @@
+#include "AppDetector.h"
+#include <iostream>
+#include <windows.h>
+#include <tlhelp32.h>
+#include <algorithm>
+
+AppDetector::AppDetector() {
+    // Initialize the list of apps to monitor
+    apps = {
+        {"Visual Studio Code", "Code.exe", false},
+        {"Brave Browser", "brave.exe", false},
+        {"Blender", "blender.exe", false},
+        {"Steam", "steam.exe", false},
+        {"Spotify", "Spotify.exe", false},
+        {"Discord", "Discord.exe", false}
+    };
+}
+
+bool AppDetector::isProcessRunning(const std::string& processName) const {
+    HANDLE hProcessSnap;
+    PROCESSENTRY32 pe32;
+    
+    // Take a snapshot of all processes in the system
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hProcessSnap == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    
+    pe32.dwSize = sizeof(PROCESSENTRY32);
+    
+    // Retrieve information about the first process
+    if (!Process32First(hProcessSnap, &pe32)) {
+        CloseHandle(hProcessSnap);
+        return false;
+    }
+    
+    // Walk through the snapshot of processes
+    do {
+        std::string currentProcess = pe32.szExeFile;
+        // Convert to lowercase for case-insensitive comparison
+        std::transform(currentProcess.begin(), currentProcess.end(), 
+                      currentProcess.begin(), ::tolower);
+        
+        std::string targetProcess = processName;
+        std::transform(targetProcess.begin(), targetProcess.end(), 
+                      targetProcess.begin(), ::tolower);
+        
+        if (currentProcess == targetProcess) {
+            CloseHandle(hProcessSnap);
+            return true;
+        }
+    } while (Process32Next(hProcessSnap, &pe32));
+    
+    CloseHandle(hProcessSnap);
+    return false;
+}
+
+void AppDetector::detectRunningApps() {
+    for (auto& app : apps) {
+        app.isRunning = isProcessRunning(app.processName);
+    }
+}
+
+void AppDetector::printResults() const {
+    std::cout << "=== Current App Status ===" << std::endl;
+    std::cout << std::endl;
+    
+    // Print running apps
+    std::cout << "Currently Running:" << std::endl;
+    bool hasRunningApps = false;
+    for (const auto& app : apps) {
+        if (app.isRunning) {
+            std::cout << "  ✓ " << app.name << std::endl;
+            hasRunningApps = true;
+        }
+    }
+    if (!hasRunningApps) {
+        std::cout << "  None of the monitored apps are running." << std::endl;
+    }
+    
+    std::cout << std::endl;
+    
+    // Print not running apps
+    std::cout << "Not Running:" << std::endl;
+    bool hasStoppedApps = false;
+    for (const auto& app : apps) {
+        if (!app.isRunning) {
+            std::cout << "  ✗ " << app.name << std::endl;
+            hasStoppedApps = true;
+        }
+    }
+    if (!hasStoppedApps) {
+        std::cout << "  All monitored apps are running!" << std::endl;
+    }
+    
+    std::cout << std::endl;
+}
+
+std::vector<AppDetector::AppInfo> AppDetector::getRunningApps() const {
+    std::vector<AppInfo> runningApps;
+    for (const auto& app : apps) {
+        if (app.isRunning) {
+            runningApps.push_back(app);
+        }
+    }
+    return runningApps;
+}
