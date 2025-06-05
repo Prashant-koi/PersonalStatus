@@ -178,4 +178,54 @@ void OverlayWindow_X11 :: handleButtonPress(XButtonEvent* event) {
         drawInterface();
     }
 }
-#endif
+
+void OverlayWindow_X11 :: drawInterface() {
+    if (!display || window) return;
+
+    //Clear window
+    XClearWindow(display, window);
+
+    //Draw label
+    drawText("Your current thoughts:", 10, 20);
+
+    //Draw text input area(a rectangle)
+    XDrawRectangle(display, window, gc, 
+                    thoughtsArea.x, thoughtsArea.y,
+                    thoughtsArea.width, thoughtsArea.height);
+
+    //Draw current text
+    if (!currentText.empty()) {
+        drawText(currentText, thoughtsArea.x + 5, thoughtsArea.y + 20);
+    }
+
+    //Draw Button
+    std::string buttonText = isBusyToggled ? "Busy" : "Free";
+    drawButton(buttonText, buttonArea.x, buttonArea.y,
+            buttonArea.width, buttonArea.height, isBusyToggled);
+
+    XFlush(display;)
+}
+
+void OverlayWindow_X11 :: drawText(const std::string& text, int x, int y) {
+    XDrawString(display, window, gc, x, y, text.c_str(), text.length());
+}
+
+void OverlayWindow_X11 :: drawButton(const std::string& text, int x, int y,
+                                    int w, int h, bool pressed){
+    //Draw button rectangle
+    if (pressed) {
+        XFillRectangle(display, window, gc, x, y, w, h);
+        XSetForeground(display, gc, BlackPixel(display, screen));
+        drawText(text, x + 10, y + 20);
+        XSetForeground(display, gc, WhitePixel(display, screen));
+    } else {
+        XDrawRectangle(display, window, gc, x, y, w, h);
+        drawText(text, x + 10, y + 20);
+    }
+}
+
+void OverlayWindow_X11 :: setThoughtsManager(ThoughtsManager* manager) {
+    thoughtsManager = manager;
+}
+
+#endif //linux
