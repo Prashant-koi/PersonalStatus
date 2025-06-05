@@ -16,8 +16,8 @@ class OverlayWindow_Win32 : public OverlayWindow {
         void show() override;
         void hide() override;
         void messageLoop() override;
-        void setThoughtManager(ThoughtsManager* manager) override;
-        void setThoughtsManager(ThoughtsManager* manager);
+        void setThoughtsManager(ThoughtsManager* manager) override;
+        // void setThoughtsManager(ThoughtsManager* manager);
     private:
         //Window specific stuff below
         HWND hwnd;

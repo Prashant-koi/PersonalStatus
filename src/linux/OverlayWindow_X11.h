@@ -18,7 +18,7 @@ public:
     void show() override;
     void hide() override;
     void messageLoop() override;
-    void setThoughtManager(ThoughtsManager* manager) override;
+    void setThoughtsManager(ThoughtsManager* manager) override;
 
 private:
     //X11-specific stuff from now on

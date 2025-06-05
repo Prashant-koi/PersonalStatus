@@ -8,8 +8,8 @@
 #include <winhttp.h>
 #include "AppDetector.h"
 #include "WebServer.h"
-#include "OverlayWindow.h"
-#include "ThoughtsManager.h"
+#include "common/OverlayWindow.h"
+#include "common/ThoughtsManager.h"
 #include "config.h"
 
 #pragma comment(lib, "winhttp.lib")
@@ -173,7 +173,6 @@ int main() {
     AppDetector detector;
     ThoughtsManager thoughtsManager;
     WebServer server(8081);
-    OverlayWindow overlay;
     
     server.setAppDetector(&detector);
     server.setThoughtsManager(&thoughtsManager);
@@ -185,10 +184,16 @@ int main() {
     
     std::cout << "Creating overlay window..." << std::endl;
     
-    // Create and show overlay window
-    overlay.create();
-    overlay.setThoughtsManager(&thoughtsManager);
-    overlay.show();
+    // Create platform-specific overlay using factory method
+    std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
+    
+    if (!overlay->create()) {
+        std::cerr << "Failed to create overlay window" << std::endl;
+        return 1;
+    }
+    
+    overlay->setThoughtsManager(&thoughtsManager);
+    overlay->show();
     
     std::cout << "Starting Vercel API push loop..." << std::endl;
     
@@ -239,7 +244,7 @@ int main() {
     std::cout << "All components started. GUI running..." << std::endl;
     
     // Message loop for GUI (this blocks until window is closed)
-    overlay.messageLoop();
+    overlay->messageLoop();  // This will be platform-specific
     
     // Cleanup
     std::cout << "Shutting down..." << std::endl;

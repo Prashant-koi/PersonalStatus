@@ -16,7 +16,7 @@ class OverlayWindow {
         virtual void show() = 0;
         virtual void hide() = 0;
         virtual void messageLoop() = 0;
-        virtual void setThoughtManager(ThoughtsManager* manager) = 0;
+        virtual void setThoughtsManager(ThoughtsManager* manager) = 0;
 
         //Factory Method
         static OverlayWindow* createPlatformWindow();
