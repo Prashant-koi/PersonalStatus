@@ -55,4 +55,55 @@ OverlayWindow_X11 :: create() {
 
     return true
 }
+
+void OverlayWindow_X11 :: createWindow() {
+    //Get Screen dimentions
+    int screenWidth = DisplayWidth(display, screen);
+    int screenHeight = DisplayWidth(display, screen);
+
+    //Default window position will be at bottom right
+    int windowWidth = 300;
+    int windowHeight = 150;
+    int xPos = screenWidth - windowWidth - 20;
+    int yPos = screenHeight - windowHeight - 50;
+
+    //Now that the positions is set we will create the widow
+    window = XCreateSimpleWindow(
+        display,
+        RootWindow(display, screen),
+        xPos, yPos,
+        windowWidth, windowHeight,
+        2, //this is the border width
+        WhitePixel(display, screen), //Border Color
+        BlackPixel(display, screen), //Background Color
+    );
+
+    //window propertes
+    XStoreName(display, window, "Set Personal Status");
+
+    //events we are wanna receieve
+    XSelectInput(display, window,
+                ExposureMask | KeyPressMask | ButtonPressMask|
+                StructureNotifyMask);
+
+    //Setting window manager hints to make it stay on top
+    XSetWindowAttributes attrs;
+    attrs.override_redirect = True; //Bypass window manger
+    XChangeWindowAttributes(display, window, CWOverrideRedirect, &attrs);
+}
+
+void OverlayWindow_X11 :: show() {
+    if (display && window) {
+        XMapWindow(display, window);
+        XFlush(display);
+    }
+}
+
+void OverlayWindow_X11 :: hide() {
+    if (display && window) {
+        XUnmapWindow(display, window);
+        XFlush(display);
+    }
+}
+
 #endif
