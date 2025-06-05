@@ -1,4 +1,6 @@
-#include "OverlayWindow.h"
+#ifdef _WIN32 //Only Windows
+
+#include "OverlayWindow_Win32.h"
 #include <commctrl.h>
 #include <iostream>
 
@@ -243,3 +245,5 @@ LRESULT CALLBACK OverlayWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
     
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
+
+#endif //_WIN32
