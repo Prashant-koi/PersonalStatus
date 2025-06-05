@@ -24,7 +24,7 @@ OverlayWindow_X11 :: ~OverlayWindow_X11() {
     }
 }
 
-OverlayWindow_X11 :: create() {
+bool OverlayWindow_X11 :: create() {
     //connecting to x server
     display = XOpenDisplay(nullptr);
     if (!display) {
@@ -44,9 +44,9 @@ OverlayWindow_X11 :: create() {
     }
 
     //creating gc
-    gc = XCreateGc(display, window, 0, nullptr);
+    gc = XCreateGC(display, window, 0, nullptr);
     if (font) {
-        xSetFont(display, gc, font -> fid);
+        XSetFont(display, gc, font -> fid);
     }
 
     //setting colors
@@ -59,7 +59,7 @@ OverlayWindow_X11 :: create() {
 void OverlayWindow_X11 :: createWindow() {
     //Get Screen dimentions
     int screenWidth = DisplayWidth(display, screen);
-    int screenHeight = DisplayWidth(display, screen);
+    int screenHeight = DisplayHeight(display, screen);
 
     //Default window position will be at bottom right
     int windowWidth = 300;
@@ -75,7 +75,7 @@ void OverlayWindow_X11 :: createWindow() {
         windowWidth, windowHeight,
         2, //this is the border width
         WhitePixel(display, screen), //Border Color
-        BlackPixel(display, screen), //Background Color
+        BlackPixel(display, screen) //Background Color
     );
 
     //window propertes
@@ -117,12 +117,12 @@ void OverlayWindow_X11 :: messageLoop() {
 
         switch (event.type) {
             case Expose:
-                if (event.xexpose.count = 0) { //Last expose event
+                if (event.xexpose.count == 0) { //Last expose event
                     drawInterface();
                 }
                 break;
             
-            case KeyPress;
+            case KeyPress:
                 handleKeyPress(&event.xkey);
                 break;
             
@@ -130,7 +130,7 @@ void OverlayWindow_X11 :: messageLoop() {
                 handleButtonPress(&event.xbutton);
                 break;
 
-            case DestroyNotify;
+            case DestroyNotify:
                 running = false;
                 break;
         }
@@ -144,7 +144,7 @@ void OverlayWindow_X11 :: handleKeyPress(XKeyEvent* event) {
 
     if (keysym == XK_BackSpace) {
         //handle backspace
-        if (!currenText.empty()) {
+        if (!currentText.empty()) {
             currentText.pop_back();
             if (thoughtsManager) {
                 thoughtsManager -> setCurrentThoughts(currentText);
@@ -168,7 +168,7 @@ void OverlayWindow_X11 :: handleButtonPress(XButtonEvent* event) {
     if (event->x >= buttonArea.x &&
         event->x <= buttonArea.x + buttonArea.width &&
         event->y >= buttonArea.y &&
-        event->y <= buttonArea.y + buttonArea.height &&) {
+        event->y <= buttonArea.y + buttonArea.height) {
 
         // Toggle busy status
         isBusyToggled = !isBusyToggled;
@@ -180,7 +180,7 @@ void OverlayWindow_X11 :: handleButtonPress(XButtonEvent* event) {
 }
 
 void OverlayWindow_X11 :: drawInterface() {
-    if (!display || window) return;
+    if (!display || !window) return;
 
     //Clear window
     XClearWindow(display, window);
@@ -203,7 +203,7 @@ void OverlayWindow_X11 :: drawInterface() {
     drawButton(buttonText, buttonArea.x, buttonArea.y,
             buttonArea.width, buttonArea.height, isBusyToggled);
 
-    XFlush(display;)
+    XFlush(display);
 }
 
 void OverlayWindow_X11 :: drawText(const std::string& text, int x, int y) {
