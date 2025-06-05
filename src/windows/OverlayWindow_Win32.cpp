@@ -3,29 +3,30 @@
 #include "OverlayWindow_Win32.h"
 #include <commctrl.h>
 #include <iostream>
+#include <windows.h>
 
 #pragma comment(lib, "comctl32.lib")
 
 #define ID_EDIT_THOUGHTS 1001
 #define ID_TOGGLE_BUSY 1002
 
-OverlayWindow::OverlayWindow() 
+OverlayWindow_Win32::OverlayWindow_Win32() 
     : hwnd(nullptr), hEditThoughts(nullptr), hToggleBusy(nullptr), 
       hLabelThoughts(nullptr), hLabelBusy(nullptr), 
       thoughtsManager(nullptr), isBusyToggled(false) {
 }
 
-OverlayWindow::~OverlayWindow() {
+OverlayWindow_Win32::~OverlayWindow_Win32() {
     if (hwnd) {
         DestroyWindow(hwnd);
     }
 }
 
-void OverlayWindow::setThoughtsManager(ThoughtsManager* manager) {
+void OverlayWindow_Win32::setThoughtsManager(ThoughtsManager* manager) {
     thoughtsManager = manager;
 }
 
-bool OverlayWindow::create() {
+bool OverlayWindow_Win32::create() {
     // Register window class - Use TEXT macro for proper string literals
     const TCHAR* className = TEXT("PersonalStatusOverlay");
     
@@ -77,7 +78,7 @@ bool OverlayWindow::create() {
     return true;
 }
 
-void OverlayWindow::setupWindowStyle() {
+void OverlayWindow_Win32::setupWindowStyle() {
     // Make window semi-transparent
     SetLayeredWindowAttributes(hwnd, 0, 200, LWA_ALPHA); // 200/255 opacity
     
@@ -94,7 +95,7 @@ void OverlayWindow::setupWindowStyle() {
     */
 }
 
-void OverlayWindow::createControls() {
+void OverlayWindow_Win32::createControls() {
     // "Your current thoughts" label - Use TEXT macro
     hLabelThoughts = CreateWindow(
         TEXT("STATIC"),
@@ -141,20 +142,20 @@ void OverlayWindow::createControls() {
     SendMessage(hToggleBusy, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
-void OverlayWindow::show() {
+void OverlayWindow_Win32::show() {
     if (hwnd) {
         ShowWindow(hwnd, SW_SHOW);
         UpdateWindow(hwnd);
     }
 }
 
-void OverlayWindow::hide() {
+void OverlayWindow_Win32::hide() {
     if (hwnd) {
         ShowWindow(hwnd, SW_HIDE);
     }
 }
 
-void OverlayWindow::messageLoop() {
+void OverlayWindow_Win32::messageLoop() {
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
@@ -162,7 +163,7 @@ void OverlayWindow::messageLoop() {
     }
 }
 
-void OverlayWindow::updateThoughts() {
+void OverlayWindow_Win32::updateThoughts() {
     if (!thoughtsManager || !hEditThoughts) return;
     
     // Get text from edit control
@@ -186,7 +187,7 @@ void OverlayWindow::updateThoughts() {
     }
 }
 
-void OverlayWindow::toggleBusyStatus() {
+void OverlayWindow_Win32::toggleBusyStatus() {
     if (!thoughtsManager) return;
     
     isBusyToggled = !isBusyToggled;
@@ -196,15 +197,15 @@ void OverlayWindow::toggleBusyStatus() {
     SetWindowText(hToggleBusy, isBusyToggled ? TEXT("Busy") : TEXT("Free"));
 }
 
-LRESULT CALLBACK OverlayWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    OverlayWindow* window = nullptr;
+LRESULT CALLBACK OverlayWindow_Win32::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    OverlayWindow_Win32* window = nullptr;
     
     if (uMsg == WM_CREATE) {
         CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
-        window = reinterpret_cast<OverlayWindow*>(pCreate->lpCreateParams);
+        window = reinterpret_cast<OverlayWindow_Win32*>(pCreate->lpCreateParams);
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
     } else {
-        window = reinterpret_cast<OverlayWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+        window = reinterpret_cast<OverlayWindow_Win32*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     }
     
     if (window) {

@@ -17,6 +17,7 @@ class OverlayWindow_Win32 : public OverlayWindow {
         void hide() override;
         void messageLoop() override;
         void setThoughtManager(ThoughtsManager* manager) override;
+        void setThoughtsManager(ThoughtsManager* manager);
     private:
         //Window specific stuff below
         HWND hwnd;
@@ -24,6 +25,8 @@ class OverlayWindow_Win32 : public OverlayWindow {
         HWND hToggleBusy;
         HWND hLabelThoughts;
         HWND hLabelBusy;
+        ThoughtsManager* thoughtsManager;
+        bool isBusyToggled;
 
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
         void createControls();
