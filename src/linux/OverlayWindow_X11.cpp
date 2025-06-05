@@ -127,7 +127,7 @@ void OverlayWindow_X11 :: messageLoop() {
                 break;
             
             case ButtonPress:
-                handelButtonPress(&event.xbutton);
+                handleButtonPress(&event.xbutton);
                 break;
 
             case DestroyNotify;
@@ -137,5 +137,45 @@ void OverlayWindow_X11 :: messageLoop() {
     }
 }
 
+void OverlayWindow_X11 :: handleKeyPress(XKeyEvent* event) {
+    char buffer[32];
+    KeySym keysym;
+    int len = XLookupString(event,buffer, sizeof(buffer), &keysym, nullptr);
 
+    if (keysym == XK_BackSpace) {
+        //handle backspace
+        if (!currenText.empty()) {
+            currentText.pop_back();
+            if (thoughtsManager) {
+                thoughtsManager -> setCurrentThoughts(currentText);
+            }
+            drawInterface();
+        }
+    } else if (keysym == XK_Return) {
+        // Handle enter
+        drawInterface();
+    } else if (len > 0 && buffer[0] >= 32) { //printable character
+        currentText += buffer[0];
+        if (thoughtsManager) {
+            thoughtsManager -> setCurrentThoughts(currentText);
+        }
+        drawInterface();
+    }
+}
+
+void OverlayWindow_X11 :: handleButtonPress(XButtonEvent* event) {
+    //check if click is in button area
+    if (event->x >= buttonArea.x &&
+        event->x <= buttonArea.x + buttonArea.width &&
+        event->y >= buttonArea.y &&
+        event->y <= buttonArea.y + buttonArea.height &&) {
+
+        // Toggle busy status
+        isBusyToggled = !isBusyToggled;
+        if (thoughtsManager) {
+            thoughtsManager -> setBusyStatus(isBusyToggled);
+        }
+        drawInterface();
+    }
+}
 #endif
