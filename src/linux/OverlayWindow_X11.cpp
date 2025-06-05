@@ -106,4 +106,36 @@ void OverlayWindow_X11 :: hide() {
     }
 }
 
+void OverlayWindow_X11 :: messageLoop() {
+    if (!display) return;
+
+    XEvent event;
+    bool running = true;
+
+    while (running) {
+        XNextEvent(display, &event);
+
+        switch (event.type) {
+            case Expose:
+                if (event.xexpose.count = 0) { //Last expose event
+                    drawInterface();
+                }
+                break;
+            
+            case KeyPress;
+                handleKeyPress(&event.xkey);
+                break;
+            
+            case ButtonPress:
+                handelButtonPress(&event.xbutton);
+                break;
+
+            case DestroyNotify;
+                running = false;
+                break;
+        }
+    }
+}
+
+
 #endif
