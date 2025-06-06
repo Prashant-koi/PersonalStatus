@@ -1,219 +1,320 @@
 # Personal Status Monitor
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)](https://www.microsoft.com/windows)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue.svg)](https://github.com/yourusername/personal-status-monitor)
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
 
 ## 🎯 What It Does
 
-This app creates a desktop widget that:
-- 📝 Tracks your current thoughts (typed in real-time)
-- 🟢 Monitors your busy/free status 
-- 🖥️ Detects which development apps you're using
-- 🚀 Pushes this data to your portfolio website every 2 seconds
+This app creates a cross-platform desktop widget that:
+- 📝 **Real-time thoughts sharing** - Type what you're thinking, visitors see it instantly
+- 🟢 **Availability status** - Toggle between busy/free
+- 🖥️ **App monitoring** - Automatically detects development tools you're using
+- 🚀 **Live portfolio integration** - Updates your website every 2 seconds
+- 🔒 **Secure API** - Protected with API key authentication
+- 🌍 **Cross-platform** - Works on Windows and Linux
 
-## 📸 Example Output
+## 🚀 Quick Start
 
-### Desktop Widget
-When you run the app, you'll see a small overlay window where you can:
-- Type your current thoughts
-- Toggle between "Free" and "Busy" status
-- The window stays on your desktop and updates your portfolio in real-time
+### **Prerequisites**
+- **Windows:** MinGW/GCC, CMake 3.16+
+- **Linux:** GCC, CMake 3.16+, X11 development libraries
+- **Both:** Vercel account, Next.js portfolio website
 
-### Console Output
-```
-Personal Status Monitor - Desktop Widget
-========================================
-Monitoring: Brave, VS Code, PowerShell, Android Studio, Docker, Postman, Visual Studio
-Local Server: http://localhost:8081
-Vercel API: Pushing every 2 seconds (Secured with API key)
-Press Ctrl+C to exit
-
-Configuration loaded from .env file
-API URL: https://my-portfolio.vercel.app/api/status
-
-Starting local web server...
-Web server started on port 8081
-Creating overlay window...
-Starting Vercel API push loop...
-All components started. GUI running...
-
-[VERCEL] ✓ Sent: {"timestamp":1701234567,"thoughts":"Working on a new React component","activeApps":["Visual Studio Code","Brave Browser"],"busy":false}
-[VERCEL] ✓ Sent: {"timestamp":1701234569,"thoughts":"Debugging API integration","activeApps":["Visual Studio Code","Postman"],"busy":true}
-[VERCEL] ✓ Sent: {"timestamp":1701234571,"thoughts":"Taking a break","activeApps":[],"busy":false}
-```
-
-### Portfolio Website Display
-Your website visitors will see something like:
-
-```
-🟢 Online
-
-Current Thoughts: "Working on a new React component"
-Availability: 🟢 Available
-Currently Using: Visual Studio Code, Brave Browser
-Last updated: 2:34:27 PM
-```
-
-### API Response Example
-Your `/api/status` endpoint returns:
-```json
-{
-  "thoughts": "Working on a new React component",
-  "activeApps": ["Visual Studio Code", "Brave Browser"],
-  "busy": false,
-  "timestamp": 1701234567,
-  "lastUpdated": "2023-11-29T14:34:27.000Z",
-  "status": "online"
-}
-```
-
-## Setup Instructions
-
-### Prerequisites
-- Windows 10/11
-- MinGW/GCC compiler
-- Next.js portfolio website
-- Vercel account (free tier works)
-
-### 1. Clone and Configure
-
+### **1. Clone and Setup**
 ```bash
 git clone https://github.com/yourusername/personal-status-monitor
 cd personal-status-monitor
 
-# Copy the example environment file
+# Copy environment template
 cp .env.example .env
 
-# Edit .env with your values
-notepad .env
+# Edit with your values
+notepad .env  # Windows
+nano .env     # Linux
 ```
 
-### 2. Deploy Your Vercel API
-
-1. **Add the API route to your Next.js portfolio:**
-   ```typescript
-   // app/api/status/route.ts
-   import { NextRequest, NextResponse } from 'next/server';
-
-   const API_KEY = process.env.PERSONAL_STATUS_API_KEY;
-   let currentStatus = {
-     thoughts: "App offline",
-     activeApps: [],
-     busy: false,
-     timestamp: 0,
-     lastUpdated: null as Date | null
-   };
-
-   function validateApiKey(request: NextRequest): boolean {
-     const apiKeyFromHeader = request.headers.get('X-API-Key');
-     return apiKeyFromHeader === API_KEY;
-   }
-
-   export async function POST(request: NextRequest) {
-     if (!validateApiKey(request)) {
-       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-     }
-
-     const data = await request.json();
-     currentStatus = { ...data, lastUpdated: new Date() };
-     return NextResponse.json({ success: true });
-   }
-
-   export async function GET() {
-     const now = Date.now() / 1000;
-     const isRecent = currentStatus.timestamp && (now - currentStatus.timestamp) < 10;
-     
-     if (!isRecent) {
-       return NextResponse.json({
-         thoughts: "App offline",
-         activeApps: [],
-         busy: false,
-         timestamp: 0,
-         status: 'offline'
-       });
-     }
-     
-     return NextResponse.json({ ...currentStatus, status: 'online' });
-   }
-   ```
-
-2. **Deploy to Vercel and set environment variable:**
-   ```bash
-   vercel
-   # In Vercel Dashboard: Add PERSONAL_STATUS_API_KEY environment variable
-   ```
-
-3. **Update your .env file:**
-   ```bash
-   VERCEL_API_URL=https://your-actual-deployment.vercel.app/api/status
-   API_KEY=your-secret-key-from-vercel
-   ```
-
-### 3. Build and Run
-
+### **2. Configure Your API**
 ```bash
-# Build the application
-g++ -g -std=c++17 -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601 main.cpp AppDetector.cpp WebServer.cpp OverlayWindow.cpp ThoughtsManager.cpp -o overlay_app.exe -lwinhttp -lws2_32 -lgdi32 -luser32 -lcomctl32
-
-# Run the application
-./overlay_app.exe
+# In .env file:
+VERCEL_API_URL=https://your-project.vercel.app/api/status
+API_KEY=your-secret-api-key
 ```
 
-## ✨ Features
+### **3. Build and Run**
 
-- ✅ **Real-time thoughts sharing** - Type what you're thinking, visitors see it instantly
-- ✅ **Availability status** - Toggle between busy/free
-- ✅ **App monitoring** - Automatically detects what development tools you're using
-- ✅ **Secure API** - Protected with API key authentication
-- ✅ **Local web server** - Also serves data locally on port 8081
-- ✅ **Desktop widget** - Draggable, semi-transparent overlay window
-- ✅ **Environment configuration** - Easy setup with `.env` files
-- ✅ **Cross-platform friendly** - Designed for easy porting
+**Windows:**
+```bash
+# Using build script (recommended)
+.\build.bat
 
-## 🔒 Security
+# The script creates a 'build' directory automatically
+# Executable will be: build\personal_status_monitor.exe
 
-- Your API key is private and stored in `.env` (not committed to git)
-- Only POST requests (updating status) require authentication
-- GET requests (viewing status) are public for portfolio visitors
-- Each person uses their own Vercel deployment and API key
+# Run from project root (so it finds .env file)
+.\build\personal_status_monitor.exe
+```
 
-## 🎯 Monitored Applications
+**Linux:**
+```bash
+# Using build script (installs dependencies)
+chmod +x build.sh
+./build.sh
 
-- Brave Browser (`brave.exe`)
-- Visual Studio Code (`Code.exe`) 
-- PowerShell (`powershell.exe`)
-- Android Studio (`studio64.exe`)
-- Docker Desktop (`Docker Desktop.exe`)
-- Postman (`Postman.exe`)
-- Visual Studio (`devenv.exe`)
+# Or manually with CMake
+mkdir build && cd build
+cmake ..
+make
+./personal_status_monitor
+```
 
-Want to monitor different apps? Customize the list in [`AppDetector.cpp`](AppDetector.cpp).
+## 🧪 Testing Your Setup
 
+### **1. Verify Build Success**
+You should see:
+```
+✓ Build successful! Run personal_status_monitor.exe
+```
 
+### **2. Check Application Startup**
+Expected console output:
+```
+Personal Status Monitor - Desktop Widget
+========================================
+Configuration loaded from .env file
+API URL: https://your-project.vercel.app/api/status
 
-## 🤝 Contributing
+Starting local web server...
+Web server started on port 8081
+Creating overlay window...
+All components started. GUI running...
 
-We welcome contributions! Here's how you can help:
+[VERCEL] ✓ Sent: {"timestamp":1701234567,"thoughts":"","activeApps":["Visual Studio Code"],"busy":false}
+```
 
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-4. **Test thoroughly**
-5. **Commit your changes**
-   ```bash
-   git commit -m 'Add some amazing feature'
-   ```
-6. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-7. **Open a Pull Request**
+### **3. Test Components**
 
+**Desktop Widget:**
+- [✅] Semi-transparent window appears (bottom-right corner)
+- [✅] Text input field works
+- [✅] "Free/Busy" button toggles correctly
+- [✅] Window is draggable
 
-⭐ **Star this repo if you find it useful!**
+**Local Server Test:**
+```bash
+# Should return JSON status
+curl http://localhost:8081
+
+# Or visit in browser
+http://localhost:8081
+```
+
+### **4. Troubleshooting**
+
+**Build Issues:**
+```bash
+# Windows - Missing libraries
+# Install MinGW with: winlibs.com
+# Ensure PATH includes: C:\mingw64\bin
+
+# Linux - Missing dependencies
+sudo apt-get update
+sudo apt-get install build-essential cmake libx11-dev
+```
+
+**Runtime Issues:**
+```bash
+# Missing .env file
+cp .env.example .env
+# Edit with your actual values
+
+# API connection fails
+# Check Vercel deployment status
+# Verify API key matches Vercel environment variable
+
+# GUI doesn't appear
+# Try running as administrator (Windows)
+# Check X11 forwarding (Linux remote)
+```
+
+## 📸 Example Output
+
+### Console Output
+```
+[VERCEL] ✓ Sent: {"timestamp":1701234567,"thoughts":"Working on a React component","activeApps":["Visual Studio Code","Brave Browser"],"busy":false}
+[VERCEL] ✓ Sent: {"timestamp":1701234569,"thoughts":"Debugging API integration","activeApps":["Visual Studio Code","Postman"],"busy":true}
+```
+
+### Portfolio Website Display
+```
+🟢 Online
+
+Current Thoughts: "Working on a React component"
+Availability: 🟢 Available  
+Currently Using: Visual Studio Code, Brave Browser
+Last updated: 2:34:27 PM
+```
+
+### API Response
+```json
+{
+  "thoughts": "Working on a React component",
+  "activeApps": ["Visual Studio Code", "Brave Browser"],
+  "busy": false,
+  "timestamp": 1701234567,
+  "status": "online"
+}
+```
+
+## 🏗️ Architecture
+
+### **System Overview**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Personal Status Monitor                  │
+│                     (Cross-Platform Application)                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐    ┌──────────────────┐    ┌─────────────┐ │
+│  │   Desktop GUI   │    │   Local Server   │    │ Config Mgr  │ │
+│  │ (Platform-Spec) │◄──►│   Port 8081      │◄──►│ (.env file) │ │
+│  │                 │    │   JSON API       │    │ Environment │ │
+│  │ Windows: Win32  │    │   CORS Enabled   │    │ Variables   │ │
+│  │ Linux: X11      │    │   Thread Safe    │    │             │ │
+│  └─────────────────┘    └──────────────────┘    └─────────────┘ │
+│           │                       │                       │     │
+│           ▼                       ▼                       ▼     │
+│  ┌─────────────────┐    ┌──────────────────┐    ┌─────────────┐ │
+│  │ Thoughts Manager│    │  App Detector    │    │ HTTP Client │ │
+│  │ (Thread Safe)   │    │ (Process Scan)   │    │ (Platform)  │ │
+│  │ • Text Storage  │    │ • Windows: TH32  │    │ Win: WinHTTP│ │
+│  │ • Status Toggle │    │ • Linux: /proc   │    │ Linux: curl │ │
+│  │ • Mutex Locked  │    │ • Real-time Poll │    │ • API Auth  │ │
+│  └─────────────────┘    └──────────────────┘    └─────────────┘ │
+│                                   │                       │     │
+│                                   └───────────────────────┼─────┤
+│                                                           │     │
+└───────────────────────────────────────────────────────────┼─────┘
+                                                            │
+                              Every 2 seconds              │
+                                    │                       │
+                                    ▼                       ▼
+              ┌─────────────────────────────────────────────────────┐
+              │              Vercel API Endpoint                    │
+              │        https://your-portfolio.vercel.app            │
+              │                                                     │
+              │  POST /api/status (🔒 API Key Required)            │
+              │  • Updates current status                           │
+              │  • Validates authentication                         │
+              │  • Stores in memory                                 │
+              │                                                     │
+              │  GET /api/status (🌍 Public Access)               │
+              │  • Returns current status                           │
+              │  • Portfolio visitors can view                      │
+              │  • No authentication needed                         │
+              └─────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+              ┌─────────────────────────────────────────────────────┐
+              │            Your Portfolio Website                   │
+              │                                                     │
+              │  🟢 Online                                         │
+              │  Current Thoughts: "Building cross-platform app"   │
+              │  Availability: 🟢 Available                       │
+              │  Currently Using: VS Code, Brave Browser           │
+              │  Last updated: 2:34:27 PM                          │
+              └─────────────────────────────────────────────────────┘
+```
+
+### **Component Details**
+
+#### **Cross-Platform Abstraction Layer**
+```cpp
+// Abstract base class
+class OverlayWindow {
+public:
+    virtual bool create() = 0;
+    virtual void show() = 0;
+    virtual void messageLoop() = 0;
+    // Factory method creates platform-specific instance
+    static OverlayWindow* createPlatformWindow();
+};
+
+#ifdef _WIN32
+    return new OverlayWindow_Win32();  // Windows implementation
+#elif __linux__
+    return new OverlayWindow_X11();    // Linux implementation
+#endif
+```
+
+#### **Platform-Specific Implementations**
+
+| Component | Windows | Linux | Shared |
+|-----------|---------|-------|---------|
+| **GUI Framework** | Win32 API | X11/Xlib | Abstract Interface |
+| **HTTP Client** | WinHTTP | libcurl/sockets | JSON Generation |
+| **Process Detection** | CreateToolhelp32Snapshot | /proc filesystem | App Matching Logic |
+| **Threading** | std::thread | std::thread | Thread Management |
+| **File I/O** | Windows API | POSIX | Config Parser |
+| **Build System** | CMake + MinGW | CMake + GCC | CMakeLists.txt |
+
+#### **Data Flow**
+1. **User Input** → Desktop GUI captures thoughts/status
+2. **App Detection** → Scans running processes every 2 seconds  
+3. **JSON Generation** → Combines user data + detected apps
+4. **Local Server** → Serves data on localhost:8081 for development
+5. **API Push** → Sends encrypted data to Vercel endpoint
+6. **Portfolio Display** → Website fetches and displays live status
+
+#### **Security Model**
+```
+┌─────────────────┐    🔒 API Key    ┌─────────────────┐
+│   Your C++ App  │ ────────────────► │  Vercel API     │
+│   (Private)     │    POST /status   │  (Authenticated)│
+└─────────────────┘                   └─────────────────┘
+                                               │
+                  ┌─────────────────────────────┘
+                  │
+                  ▼ GET /status (No Auth)
+        ┌─────────────────┐
+        │ Portfolio       │
+        │ Visitors        │
+        │ (Public)        │
+        └─────────────────┘
+```
+
+### **File Structure**
+```
+PersonalStatus/
+├── src/
+│   ├── common/                    # Cross-platform code
+│   │   ├── AppDetector.h/cpp     # Process detection logic
+│   │   ├── ThoughtsManager.h/cpp # Thread-safe data management
+│   │   ├── WebServer.h/cpp       # Local HTTP server
+│   │   ├── OverlayWindow.h/cpp   # Abstract GUI interface
+│   │   └── config.h              # Environment variable parser
+│   ├── windows/                   # Windows-specific implementation
+│   │   └── OverlayWindow_Win32.h/cpp
+│   ├── linux/                     # Linux-specific implementation  
+│   │   └── OverlayWindow_X11.h/cpp
+│   └── main.cpp                   # Entry point & main loop
+├── build/                         # Generated build files (gitignored)
+├── .env                          # Your configuration (gitignored)
+├── .env.example                  # Template for others
+├── CMakeLists.txt                # Cross-platform build config
+├── build.bat                     # Windows build script
+├── build.sh                      # Linux build script
+└── README.md                     # This file
+```
+
+### **Modern C++ Features Used**
+- ✅ **C++17 Standard** - Modern language features
+- ✅ **RAII** - Automatic resource management
+- ✅ **Smart Pointers** - Memory safety
+- ✅ **Abstract Base Classes** - Clean interfaces
+- ✅ **Factory Pattern** - Platform-specific object creation
+- ✅ **std::thread** - Cross-platform threading
+- ✅ **Conditional Compilation** - `#ifdef` for platform code
+- ✅ **CMake** - Modern build system

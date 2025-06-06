@@ -1,15 +1,78 @@
-# Environment files
+# Environment files (keep secrets safe)
 .env
 
-# Build files
+# Build directories and output files
+build/
+dist/
+out/
+
+# Compiled executables
 *.exe
 *.obj
 *.o
+*.dll
+*.so
+*.dylib
+personal_status_monitor
+personal_status_monitor.exe
 
-# VS Code
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# VS Code settings (keep tasks.json but ignore personal settings)
 .vscode/
 !.vscode/tasks.json
+!.vscode/c_cpp_properties.json
 
 # Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 *.tmp
+*.temp
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+*.suo
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.sbr
+*.sdf
+*.opensdf
+*.pdb
+
+# Backup files
+*~
+*.swp
+*.swo
+
+# IDE files
+.idea/
+*.iml
+*.iws
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes

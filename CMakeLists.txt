@@ -11,7 +11,6 @@ set(COMMON_SOURCES
     src/common/ThoughtsManager.cpp
     src/common/WebServer.cpp
     src/common/OverlayWindow.cpp
-    src/common/config.h
 )
 
 # Platform-specific sources

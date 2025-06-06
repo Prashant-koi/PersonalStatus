@@ -53,7 +53,7 @@ bool OverlayWindow_X11 :: create() {
     XSetForeground(display, gc, WhitePixel(display, screen));
     XSetBackground(display, gc, BlackPixel(display, screen));
 
-    return true
+    return true;
 }
 
 void OverlayWindow_X11 :: createWindow() {

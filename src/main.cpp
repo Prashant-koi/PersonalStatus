@@ -6,11 +6,11 @@
 #include <vector>
 #include <windows.h>
 #include <winhttp.h>
-#include "AppDetector.h"
-#include "WebServer.h"
+#include "common/AppDetector.h"
+#include "common/WebServer.h"
 #include "common/OverlayWindow.h"
 #include "common/ThoughtsManager.h"
-#include "config.h"
+#include "common/config.h"
 
 #pragma comment(lib, "winhttp.lib")
 

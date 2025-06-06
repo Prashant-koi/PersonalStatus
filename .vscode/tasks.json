@@ -2,34 +2,16 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build with Windows HTTP",
+      "label": "build with CMake",
       "type": "shell",
-      "command": "g++",
-      "args": [
-        "-g",
-        "-std=c++17",
-        "-DUNICODE",
-        "-D_UNICODE",
-        "-D_WIN32_WINNT=0x0601",
-        "main.cpp",
-        "AppDetector.cpp",
-        "WebServer.cpp",
-        "OverlayWindow.cpp",
-        "ThoughtsManager.cpp",
-        "-o",
-        "overlay_app.exe",
-        "-lwinhttp",
-        "-lws2_32",
-        "-lgdi32",
-        "-luser32",
-        "-lcomctl32"
-      ],
+      "command": "cmake",
+      "args": ["--build", "build"],
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "problemMatcher": ["$gcc"],
-      "detail": "Build with Windows HTTP API"
+      "detail": "Build with CMake (Cross-Platform)"
     }
   ],
   "configurations": [
