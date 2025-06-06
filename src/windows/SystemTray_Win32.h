@@ -36,7 +36,7 @@ class SystemTray_Win32 : public SystemTray {
         NOTIFYICONDATA nid;
         HWND hwnd;
         HMENU hMenu;
-        std::vector<MenuItem> menuItem;
+        std::vector<MenuItem> menuItems;
         bool isCreated;
 
         //win secific constants
