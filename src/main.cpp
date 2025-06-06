@@ -11,6 +11,7 @@
 #include "common/OverlayWindow.h"
 #include "common/ThoughtsManager.h"
 #include "common/config.h"
+#include "common/SystemTray.h"
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -182,6 +183,21 @@ int main() {
     // Start web server in background
     std::thread serverThread(&WebServer::start, &server);
     
+    // Create system tray
+    std::unique_ptr<SystemTray> tray(SystemTray::createPlatformTray());
+    
+    // Setup tray menu
+    tray->addMenuItem("Show Window", 1);
+    tray->addMenuItem("Hide Window", 2);
+    tray->addSeparator();
+    tray->addMenuItem("Exit", 99);
+    
+    // Create tray
+    if (!tray->create()) {
+        std::cerr << "Failed to create system tray" << std::endl;
+        return 1;
+    }
+    
     std::cout << "Creating overlay window..." << std::endl;
     
     // Create platform-specific overlay using factory method
@@ -194,6 +210,34 @@ int main() {
     
     overlay->setThoughtsManager(&thoughtsManager);
     overlay->show();
+    
+    // Setup tray callbacks
+    bool windowVisible = false;
+    tray->onMenuItemClicked = [&](int id) {
+        switch(id) {
+            case -1: // Left click
+                if (windowVisible) {
+                    overlay->hide();
+                    windowVisible = false;
+                } else {
+                    overlay->show();
+                    windowVisible = true;
+                }
+                break;
+            case 1: // Show Window
+                overlay->show();
+                windowVisible = true;
+                break;
+            case 2: // Hide Window
+                overlay->hide();
+                windowVisible = false;
+                break;
+            case 99: // Exit
+                std::cout << "Exiting application..." << std::endl;
+                exit(0);
+                break;
+        }
+    };
     
     std::cout << "Starting Vercel API push loop..." << std::endl;
     
@@ -241,10 +285,11 @@ int main() {
         }
     });
     
-    std::cout << "All components started. GUI running..." << std::endl;
+    std::cout << "All components started. Running in background..." << std::endl;
+    std::cout << "Right-click tray icon for options." << std::endl;
     
-    // Message loop for GUI (this blocks until window is closed)
-    overlay->messageLoop();  // This will be platform-specific
+    // Non-blocking message loop
+    overlay->messageLoop();  // This should now handle tray messages too
     
     // Cleanup
     std::cout << "Shutting down..." << std::endl;

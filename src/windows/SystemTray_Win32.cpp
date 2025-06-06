@@ -45,11 +45,18 @@ bool SystemTray_Win32::create() {
     // Set default tooltip
     wcscpy_s(nid.szTip, L"Personal Status Monitor");
     
+    // Set tray icon version for better compatibility
+    nid.uVersion = NOTIFYICON_VERSION_4;
+    Shell_NotifyIcon(NIM_SETVERSION, &nid);
+    
     // Add icon to system tray
     if (!Shell_NotifyIcon(NIM_ADD, &nid)) {
         std::cerr << "Failed to add icon to system tray" << std::endl;
         return false;
     }
+    
+    // Force icon to be visible (not hidden)
+    Shell_NotifyIcon(NIM_MODIFY, &nid);
     
     isCreated = true;
     createContextMenu();
@@ -208,27 +215,28 @@ LRESULT CALLBACK SystemTray_Win32::WindowProc(HWND hwnd, UINT uMsg, WPARAM wPara
     if (tray) {
         switch (uMsg) {
             case WM_TRAYICON:
+                std::cout << "[TRAY] Icon clicked!" << std::endl;  // DEBUG
                 switch (lParam) {
                     case WM_LBUTTONUP:
-                        // Left click - call callback with special ID
+                        std::cout << "[TRAY] Left click detected" << std::endl;  // DEBUG
                         if (tray->onMenuItemClicked) {
-                            tray->onMenuItemClicked(-1); // -1 for left click
+                            tray->onMenuItemClicked(-1);
                         }
                         break;
                         
                     case WM_RBUTTONUP:
-                        // Right click - show context menu
+                        std::cout << "[TRAY] Right click detected" << std::endl;  // DEBUG
                         tray->showContextMenu();
                         break;
                 }
-                break;
+                return 0;  // Important: return 0 for handled messages
                 
             case WM_COMMAND:
-                // Menu item selected
+                std::cout << "[TRAY] Menu item selected: " << LOWORD(wParam) << std::endl;  // DEBUG
                 if (tray->onMenuItemClicked) {
                     tray->onMenuItemClicked(LOWORD(wParam));
                 }
-                break;
+                return 0;
         }
     }
     

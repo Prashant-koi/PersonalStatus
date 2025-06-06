@@ -157,7 +157,8 @@ void OverlayWindow_Win32::hide() {
 
 void OverlayWindow_Win32::messageLoop() {
     MSG msg;
-    while (GetMessage(&msg, nullptr, 0, 0)) {
+    // Process messages for ALL windows in this thread
+    while (GetMessage(&msg, nullptr, 0, 0)) {  // nullptr = all windows
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
