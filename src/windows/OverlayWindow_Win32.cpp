@@ -144,14 +144,36 @@ void OverlayWindow_Win32::createControls() {
 
 void OverlayWindow_Win32::show() {
     if (hwnd) {
+        // First, bring window to topmost
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, 
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        
+        // Then show the window
         ShowWindow(hwnd, SW_SHOW);
+        
+        // Force it to the foreground
+        SetForegroundWindow(hwnd);
+        
+        // Ensure it gets focus
+        SetActiveWindow(hwnd);
+        
+        // Update the window
         UpdateWindow(hwnd);
+        
+        // Optional: Flash the window to draw attention
+        FlashWindow(hwnd, TRUE);
+        
+        std::cout << "[WINDOW] Shown and brought to top" << std::endl;
     }
 }
 
 void OverlayWindow_Win32::hide() {
     if (hwnd) {
-        ShowWindow(hwnd, SW_HIDE);
+        // Remove topmost flag when hiding
+        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_HIDEWINDOW);
+        
+        std::cout << "[WINDOW] Hidden" << std::endl;
     }
 }
 

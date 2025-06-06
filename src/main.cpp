@@ -12,6 +12,7 @@
 #include "common/ThoughtsManager.h"
 #include "common/config.h"
 #include "common/SystemTray.h"
+#include <atomic>
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -144,7 +145,12 @@ void clearScreen() {
 #endif
 }
 
+
+
 int main() {
+
+    std::atomic<bool> shouldExit(false);
+
     std::cout << "Personal Status Monitor - Desktop Widget" << std::endl;
     std::cout << "========================================" << std::endl;
     std::cout << "Monitoring: Brave, VS Code, PowerShell, Android Studio, Docker, Postman, Visual Studio" << std::endl;
@@ -212,38 +218,68 @@ int main() {
     overlay->show();
     
     // Setup tray callbacks
-    bool windowVisible = false;
+    bool windowVisible = true;
     tray->onMenuItemClicked = [&](int id) {
+        std::cout << "[MAIN] Menu item clicked: " << id << std::endl;
         switch(id) {
             case -1: // Left click
                 if (windowVisible) {
+                    std::cout << "[MAIN] Hiding window..." << std::endl;
                     overlay->hide();
                     windowVisible = false;
+                    
                 } else {
+                    std::cout << "[MAIN] Showing window..." << std::endl;
                     overlay->show();
                     windowVisible = true;
+                    
                 }
                 break;
+                
             case 1: // Show Window
+                std::cout << "[MAIN] Showing window via menu..." << std::endl;
                 overlay->show();
                 windowVisible = true;
+                
                 break;
+                
             case 2: // Hide Window
+                std::cout << "[MAIN] Hiding window via menu..." << std::endl;
                 overlay->hide();
                 windowVisible = false;
+                
                 break;
-            case 99: // Exit
+                
+            case 99: // Exit - UPDATED GRACEFUL SHUTDOWN
+                std::cout << "Initiating graceful shutdown..." << std::endl;
+                
+                // Step 1: Set shutdown flag to stop threads
+                shouldExit = true;
+                
+                // Step 2: Hide and destroy window
+                if (windowVisible) {
+                    overlay->hide();
+                }
+                
+                // Step 3: Remove tray icon
+                tray->hide();
+                
+                // Step 4: Stop web server
+                std::cout << "Stopping web server..." << std::endl;
+                server.stop();
+                
+                // Step 5: Exit message loop
                 std::cout << "Exiting application..." << std::endl;
-                exit(0);
+                PostQuitMessage(0);
                 break;
         }
     };
     
     std::cout << "Starting Vercel API push loop..." << std::endl;
     
-    // Start Vercel API push loop (every 2 seconds)
-    std::thread vercelPushThread([&detector, &thoughtsManager, &VERCEL_API_URL, &API_KEY]() {
-        while (true) {
+    // Start Vercel API push loop (every 2 seconds) - UPDATED
+    std::thread vercelPushThread([&detector, &thoughtsManager, &VERCEL_API_URL, &API_KEY, &shouldExit]() {
+        while (!shouldExit) {  // ← Check shutdown flag
             // Detect running apps
             detector.detectRunningApps();
             auto runningApps = detector.getRunningApps();
@@ -263,39 +299,63 @@ int main() {
                 std::chrono::system_clock::now().time_since_epoch()).count() << ",";
             json << "\"thoughts\":\"" << thoughtsManager.getCurrentThoughts() << "\",";
             json << "\"activeApps\":[";
+            
             for (size_t i = 0; i < activeApps.size(); ++i) {
                 json << "\"" << activeApps[i] << "\"";
                 if (i < activeApps.size() - 1) json << ",";
             }
+            
             json << "],";
             json << "\"busy\":" << (thoughtsManager.isBusy() ? "true" : "false");
             json << "}";
             
-            std::string jsonData = json.str();
-            
-            // Send to Vercel API with API key
-            if (sendToVercelAPI(jsonData, VERCEL_API_URL, API_KEY)) {
-                std::cout << "[VERCEL] ✓ Sent: " << jsonData << std::endl;
+            // Send to Vercel API
+            if (sendToVercelAPI(json.str(), VERCEL_API_URL, API_KEY)) {
+                std::cout << "[VERCEL] ✓ Sent: " << json.str() << std::endl;
             } else {
                 std::cout << "[VERCEL] ✗ Failed to send data (check API key)" << std::endl;
             }
             
-            // Wait 2 seconds
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+            // Wait 2 seconds, but check for shutdown every 100ms
+            for (int i = 0; i < 20 && !shouldExit; ++i) {  // ← Check shutdown during wait
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
         }
+        std::cout << "[VERCEL] Thread stopped gracefully" << std::endl;  // ← Confirmation
     });
     
     std::cout << "All components started. Running in background..." << std::endl;
     std::cout << "Right-click tray icon for options." << std::endl;
     
     // Non-blocking message loop
-    overlay->messageLoop();  // This should now handle tray messages too
+    overlay->messageLoop();  // This blocks until PostQuitMessage(0)
     
-    // Cleanup
-    std::cout << "Shutting down..." << std::endl;
+    // GRACEFUL CLEANUP SEQUENCE
+    std::cout << "Message loop ended, cleaning up..." << std::endl;
+    
+    // Step 1: Ensure shutdown flag is set
+    shouldExit = true;
+    
+    // Step 2: Stop web server (if not already stopped)
+    std::cout << "Stopping web server..." << std::endl;
     server.stop();
-    serverThread.join();
-    vercelPushThread.detach();
+    
+    // Step 3: Wait for server thread to finish
+    std::cout << "Waiting for server thread..." << std::endl;
+    if (serverThread.joinable()) {
+        serverThread.join();
+        std::cout << "Server thread joined successfully" << std::endl;
+    }
+    
+    // Step 4: Wait for Vercel API thread to finish
+    std::cout << "Waiting for Vercel API thread..." << std::endl;
+    if (vercelPushThread.joinable()) {
+        vercelPushThread.join();  // ← Changed from detach() to join()
+        std::cout << "Vercel API thread joined successfully" << std::endl;
+    }
+    
+    // Step 5: Final cleanup
+    std::cout << "All threads stopped. Goodbye!" << std::endl;
     
     return 0;
 }

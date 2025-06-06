@@ -36,7 +36,7 @@ bool SystemTray_Win32::create() {
     // Set up tray icon data
     nid.hWnd = hwnd;
     nid.uID = TRAY_ID;
-    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP;  // Added NIF_SHOWTIP
     nid.uCallbackMessage = WM_TRAYICON;
     
     // Load default icon (you can customize this)
@@ -45,23 +45,36 @@ bool SystemTray_Win32::create() {
     // Set default tooltip
     wcscpy_s(nid.szTip, L"Personal Status Monitor");
     
-    // Set tray icon version for better compatibility
+    // IMPORTANT: Set version first for better Windows 10/11 compatibility
     nid.uVersion = NOTIFYICON_VERSION_4;
-    Shell_NotifyIcon(NIM_SETVERSION, &nid);
+    if (!Shell_NotifyIcon(NIM_SETVERSION, &nid)) {
+        std::cerr << "Failed to set tray icon version" << std::endl;
+    }
     
     // Add icon to system tray
     if (!Shell_NotifyIcon(NIM_ADD, &nid)) {
-        std::cerr << "Failed to add icon to system tray" << std::endl;
+        DWORD error = GetLastError();
+        std::cerr << "Failed to add icon to system tray. Error: " << error << std::endl;
         return false;
     }
     
-    // Force icon to be visible (not hidden)
+    // Force icon to be visible (try to prevent auto-hide)
+    nid.uFlags |= NIF_SHOWTIP;
     Shell_NotifyIcon(NIM_MODIFY, &nid);
+    
+    // Additional step: Try to register for always-visible behavior
+    // This requests Windows to keep the icon visible
+    NOTIFYICONDATA nidTemp = nid;
+    nidTemp.uFlags = NIF_STATE;
+    nidTemp.dwState = 0;  // Not hidden
+    nidTemp.dwStateMask = NIS_HIDDEN;
+    Shell_NotifyIcon(NIM_MODIFY, &nidTemp);
     
     isCreated = true;
     createContextMenu();
     
-    std::cout << "System tray icon created successfully" << std::endl;
+    std::cout << "✅ System tray icon created successfully!" << std::endl;
+    std::cout << "💡 If icon is hidden, drag it from overflow area to make it always visible" << std::endl;
     return true;
 }
 
@@ -215,7 +228,6 @@ LRESULT CALLBACK SystemTray_Win32::WindowProc(HWND hwnd, UINT uMsg, WPARAM wPara
     if (tray) {
         switch (uMsg) {
             case WM_TRAYICON:
-                std::cout << "[TRAY] Icon clicked!" << std::endl;  // DEBUG
                 switch (lParam) {
                     case WM_LBUTTONUP:
                         std::cout << "[TRAY] Left click detected" << std::endl;  // DEBUG

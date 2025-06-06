@@ -10,6 +10,12 @@
 WebServer::WebServer(int port) : port(port), appDetector(nullptr), thoughtsManager(nullptr), running(false) {
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
+    serverSocket = INVALID_SOCKET;
+}
+
+//Destructor
+WebServer :: ~WebServer() {
+    stop();
 }
 
 void WebServer::setAppDetector(AppDetector* detector) {
@@ -64,7 +70,7 @@ void WebServer::handleRequest(int clientSocket) {
 void WebServer::start() {
     running = true;
     
-    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == INVALID_SOCKET) {
         std::cerr << "Failed to create socket" << std::endl;
         return;
@@ -78,12 +84,14 @@ void WebServer::start() {
     if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
         std::cerr << "Bind failed" << std::endl;
         closesocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
         return;
     }
     
     if (listen(serverSocket, 5) == SOCKET_ERROR) {
         std::cerr << "Listen failed" << std::endl;
         closesocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
         return;
     }
     
@@ -93,13 +101,22 @@ void WebServer::start() {
         SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);
         if (clientSocket != INVALID_SOCKET) {
             std::thread(&WebServer::handleRequest, this, clientSocket).detach();
+        } else if (running) {
+            std::cerr << "Accept failed, still running..." << std::endl;
         }
     }
     
     closesocket(serverSocket);
+    serverSocket = INVALID_SOCKET;
 }
 
 void WebServer::stop() {
     running = false;
+
+    if (serverSocket != INVALID_SOCKET) {
+        closesocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
+    }
+
     WSACleanup();
 }

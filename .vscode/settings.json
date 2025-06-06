@@ -59,6 +59,13 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "fstream": "cpp",
+        "functional": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "mutex": "cpp",
+        "unordered_map": "cpp",
+        "xhash": "cpp"
     }
 }
