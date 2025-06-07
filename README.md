@@ -8,13 +8,18 @@ A real-time desktop widget that shows your current thoughts and active applicati
 
 ## 🎯 What It Does
 
-This app creates a cross-platform desktop widget that:
+This app creates a cross-platform desktop widget that runs in the background with system tray integration:
+
 - 📝 **Real-time thoughts sharing** - Type what you're thinking, visitors see it instantly
 - 🟢 **Availability status** - Toggle between busy/free
 - 🖥️ **App monitoring** - Automatically detects development tools you're using
 - 🚀 **Live portfolio integration** - Updates your website every 2 seconds
 - 🔒 **Secure API** - Protected with API key authentication
 - 🌍 **Cross-platform** - Works on Windows and Linux
+- 🎯 **System Tray Integration** - Runs in background, accessible via tray icon
+- 🔄 **Show/Hide Toggle** - Left-click tray icon to show/hide window
+- 📱 **Context Menu** - Right-click tray for options (Show/Hide/Exit)
+- 🧹 **Graceful Shutdown** - Clean exit with proper thread cleanup
 
 ## 🚀 Quick Start
 
@@ -55,6 +60,9 @@ API_KEY=your-secret-api-key
 
 # Run from project root (so it finds .env file)
 .\build\personal_status_monitor.exe
+# Application starts with:
+# System tray icon (notification area)
+# Desktop overlay window (can be hidden)
 ```
 
 **Linux:**
@@ -90,11 +98,24 @@ Starting local web server...
 Web server started on port 8081
 Creating overlay window...
 All components started. GUI running...
+System tray icon created successfully!
+If icon is hidden, drag it from overflow area to make it always visible        
+Creating overlay window...
+[WINDOW] Shown and brought to top
+Starting Vercel API push loop...
+All components started. Running in background...
+Right-click tray icon for options.
 
 [VERCEL] ✓ Sent: {"timestamp":1701234567,"thoughts":"","activeApps":["Visual Studio Code"],"busy":false}
 ```
 
 ### **3. Test Components**
+
+**Tray Icon:**
+- [✅] Icon appears in system tray (notification area)
+- [✅] Left-click toggles window visibility
+- [✅] Right-click shows context menu
+- [✅] Tooltip shows "Personal Status Monitor"
 
 **Desktop Widget:**
 - [✅] Semi-transparent window appears (bottom-right corner)
