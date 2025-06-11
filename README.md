@@ -54,6 +54,7 @@ This is the easiest way to use Personal Status Monitor on Windows. You'll downlo
     *   **Enter your Portfolio API Endpoint**: This is the URL your portfolio website uses to receive status updates (e.g., `https://your-portfolio.vercel.app/api/status`).
     *   **Enter your API Key**: This is the secret key used to authenticate with your API endpoint. This key should match the one configured on your portfolio's backend.
     *   Click "Save & Start". The application will save these settings (in the Windows Registry) and start.
+    *   **PLEASE CONTINUE READING FOR INSTRUCTIONS TO SETUP YOUR PORTFOLIO WEBSITE BACKEND**
 
 5.  **Usage:**
     *   The application will run in the system tray (notification area).
