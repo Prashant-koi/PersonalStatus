@@ -4,6 +4,8 @@
 #ifdef _WIN32
 
 #include "../common/OverlayWindow.h"
+#include "../common/SettingsManager.h"  
+#include "../windows/SetupDialog_Win32.h"  
 #include <windows.h>
 
 class OverlayWindow_Win32 : public OverlayWindow {
@@ -23,8 +25,10 @@ class OverlayWindow_Win32 : public OverlayWindow {
         HWND hwnd;
         HWND hEditThoughts;
         HWND hToggleBusy;
+        HWND hSettingsButton;        
         HWND hLabelThoughts;
         HWND hLabelBusy;
+        HFONT hFont;                 
         ThoughtsManager* thoughtsManager;
         bool isBusyToggled;
 
@@ -33,6 +37,7 @@ class OverlayWindow_Win32 : public OverlayWindow {
         void updateThoughts();
         void toggleBusyStatus();
         void setupWindowStyle();
+        void showSettingsDialog();   
 };
 
 #endif //_WIN32
