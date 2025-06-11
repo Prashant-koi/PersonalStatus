@@ -12,6 +12,8 @@
 #include "common/ThoughtsManager.h"
 #include "common/config.h"
 #include "common/SystemTray.h"
+#include "common/SettingsManager.h"
+#include "windows/SetupDialog_Win32.h"
 #include <atomic>
 
 #pragma comment(lib, "winhttp.lib")
@@ -148,31 +150,39 @@ void clearScreen() {
 
 
 int main() {
-
     std::atomic<bool> shouldExit(false);
-
+    
     std::cout << "Personal Status Monitor - Desktop Widget" << std::endl;
     std::cout << "========================================" << std::endl;
-    std::cout << "Monitoring: Brave, VS Code, PowerShell, Android Studio, Docker, Postman, Visual Studio" << std::endl;
-    std::cout << "Local Server: http://localhost:8081" << std::endl;
-    std::cout << "Vercel API: Pushing every 2 seconds (Secured with API key)" << std::endl;
-    std::cout << "Press Ctrl+C to exit" << std::endl;
-    std::cout << std::endl;
     
-    // Load configuration from .env file
-    auto env = Config::loadEnv();
-    const std::string VERCEL_API_URL = Config::getEnv(env, "VERCEL_API_URL");
-    const std::string API_KEY = Config::getEnv(env, "API_KEY");
+    std::string VERCEL_API_URL, API_KEY;
     
-    // Validate configuration
-    if (VERCEL_API_URL.empty() || API_KEY.empty()) {
-        std::cerr << "ERROR: Missing configuration!" << std::endl;
-        std::cerr << "Please copy .env.example to .env and fill in your values." << std::endl;
-        std::cerr << "Required: VERCEL_API_URL and API_KEY" << std::endl;
-        return 1;
+    // Check for existing settings
+    if (!SettingsManager::hasValidSettings()) {
+        std::cout << "First time setup required..." << std::endl;
+        
+        // Show setup dialog
+        if (!SetupDialog_Win32::showSetupDialog(VERCEL_API_URL, API_KEY, true)) {
+            std::cout << "Setup cancelled. Exiting..." << std::endl;
+            return 0;
+        }
+        
+        // Save settings
+        if (SettingsManager::saveSettings(VERCEL_API_URL, API_KEY)) {
+            std::cout << "Settings saved successfully!" << std::endl;
+        } else {
+            std::cerr << "Failed to save settings!" << std::endl;
+            return 1;
+        }
+    } else {
+        // Load existing settings
+        if (!SettingsManager::loadSettings(VERCEL_API_URL, API_KEY)) {
+            std::cerr << "Failed to load settings!" << std::endl;
+            return 1;
+        }
+        std::cout << "Settings loaded from system storage" << std::endl;
     }
     
-    std::cout << "Configuration loaded from .env file" << std::endl;
     std::cout << "API URL: " << VERCEL_API_URL << std::endl;
     std::cout << std::endl;
     

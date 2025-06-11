@@ -1,22 +1,29 @@
 #ifdef _WIN32 //Only Windows
 
 #include "OverlayWindow_Win32.h"
+#include "../common/SettingsManager.h"
+#include "../windows/SetupDialog_Win32.h"
 #include <commctrl.h>
 #include <iostream>
 #include <windows.h>
 
 #pragma comment(lib, "comctl32.lib")
 
+// Control IDs - consistent with resource.h
 #define ID_EDIT_THOUGHTS 1001
 #define ID_TOGGLE_BUSY 1002
+#define ID_SETTINGS_BUTTON 1006  // NEW: Use ID from resource.h
 
 OverlayWindow_Win32::OverlayWindow_Win32() 
     : hwnd(nullptr), hEditThoughts(nullptr), hToggleBusy(nullptr), 
-      hLabelThoughts(nullptr), hLabelBusy(nullptr), 
-      thoughtsManager(nullptr), isBusyToggled(false) {
+      hSettingsButton(nullptr), hLabelThoughts(nullptr), hLabelBusy(nullptr), 
+      hFont(nullptr), thoughtsManager(nullptr), isBusyToggled(false) {
 }
 
 OverlayWindow_Win32::~OverlayWindow_Win32() {
+    if (hFont) {
+        DeleteObject(hFont);  // Clean up font
+    }
     if (hwnd) {
         DestroyWindow(hwnd);
     }
@@ -132,14 +139,27 @@ void OverlayWindow_Win32::createControls() {
         nullptr
     );
     
+    // Settings button - next to Free/Busy button
+    hSettingsButton = CreateWindow(
+        TEXT("BUTTON"),
+        TEXT("Settings"),
+        WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+        100, 105, 80, 30,  // Position next to Free/Busy button
+        hwnd,
+        (HMENU)ID_SETTINGS_BUTTON,
+        GetModuleHandle(nullptr),
+        nullptr
+    );
+    
     // Set font for better visibility - Use TEXT macro
-    HFONT hFont = CreateFont(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, 
+    hFont = CreateFont(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, 
                             DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, 
                             CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Segoe UI"));
     
     SendMessage(hLabelThoughts, WM_SETFONT, (WPARAM)hFont, TRUE);
     SendMessage(hEditThoughts, WM_SETFONT, (WPARAM)hFont, TRUE);
     SendMessage(hToggleBusy, WM_SETFONT, (WPARAM)hFont, TRUE);
+    SendMessage(hSettingsButton, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
 void OverlayWindow_Win32::show() {
@@ -220,6 +240,21 @@ void OverlayWindow_Win32::toggleBusyStatus() {
     SetWindowText(hToggleBusy, isBusyToggled ? TEXT("Busy") : TEXT("Free"));
 }
 
+void OverlayWindow_Win32::showSettingsDialog() {
+    std::string endpoint, apiKey;
+    SettingsManager::loadSettings(endpoint, apiKey);
+    
+    if (SetupDialog_Win32::showSettingsDialog(endpoint, apiKey)) {
+        // Save new settings
+        if (SettingsManager::saveSettings(endpoint, apiKey)) {
+            MessageBox(hwnd, L"Settings saved successfully!\nRestart the application for changes to take effect.", 
+                      L"Settings Updated", MB_ICONINFORMATION | MB_OK);
+        } else {
+            MessageBox(hwnd, L"Failed to save settings.", L"Error", MB_ICONERROR | MB_OK);
+        }
+    }
+}
+
 LRESULT CALLBACK OverlayWindow_Win32::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     OverlayWindow_Win32* window = nullptr;
     
@@ -249,6 +284,8 @@ LRESULT CALLBACK OverlayWindow_Win32::WindowProc(HWND hwnd, UINT uMsg, WPARAM wP
                     window->updateThoughts();
                 } else if (LOWORD(wParam) == ID_TOGGLE_BUSY && HIWORD(wParam) == BN_CLICKED) {
                     window->toggleBusyStatus();
+                } else if (LOWORD(wParam) == ID_SETTINGS_BUTTON && HIWORD(wParam) == BN_CLICKED) {
+                    window->showSettingsDialog();  // New method
                 }
                 break;
                 
