@@ -1,9 +1,9 @@
 # Personal Status Monitor
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue.svg)](https://github.com/yourusername/personal-status-monitor)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue.svg)](https://github.com/Prashant-koi/personal-status-monitor)
 [![Language](https://img.shields.io/badge/language-C++17-blue.svg)](https://isocpp.org/)
-[![Latest Release](https://img.shields.io/github/v/release/yourusername/PersonalStatus)](https://github.com/yourusername/PersonalStatus/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/Prashant-koi/PersonalStatus)](https://github.com/Prashant-koi/PersonalStatus/releases/latest)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
 Would appreciate a GitHub star if you are reading this :)
