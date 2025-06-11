@@ -32,36 +32,43 @@ This app creates a desktop widget that runs in the background with system tray i
 -   📦 **Standalone Executable (Windows)**: Distributed as a single `.exe` file, statically linked with no external dependencies required.
 -   🌍 **Cross-Platform Foundation**: Built with C++17 and CMake, with Linux support planned.
 
-## 🚀 Getting Started (Windows Release v0.1.0)
+## 🚀 Getting Started (Using the Release Package - Recommended for Users)
 
-The easiest way to use Personal Status Monitor on Windows is to download the latest release.
+This is the easiest way to use Personal Status Monitor on Windows. You'll download a pre-built package containing the application.
 
 1.  **Download the Latest Release:**
     *   Go to the [Releases Page](https://github.com/yourusername/PersonalStatus/releases/latest).
     *   Download the `PersonalStatusMonitor.zip` file.
 
-2.  **Extract and Run:**
+2.  **Extract the Application:**
     *   Extract the `PersonalStatusMonitor.zip` file to any folder on your computer.
+    *   This will create a `PersonalStatusMonitor` folder. Inside this folder, you'll find `PersonalStatusMonitor.exe` along with other files like `README.md`, `LICENSE.txt`, and `QUICK_START.md`.
+
+3.  **Run the Application:**
+    *   Open the extracted `PersonalStatusMonitor` folder.
     *   Double-click `PersonalStatusMonitor.exe` to start the application.
 
-3.  **First-Time Setup:**
+4.  **First-Time Setup:**
     *   On the first run, a **Setup Dialog** will appear.
     *   **Enter your Portfolio API Endpoint**: This is the URL your portfolio website uses to receive status updates (e.g., `https://your-portfolio.vercel.app/api/status`).
-    *   **Enter your API Key**: This is the secret key used to authenticate with your API endpoint.
-    *   Click "Save & Start".
+    *   **Enter your API Key**: This is the secret key used to authenticate with your API endpoint. This key should match the one configured on your portfolio's backend.
+    *   Click "Save & Start". The application will save these settings (in the Windows Registry) and start.
 
-4.  **Usage:**
-    *   The application will run in the system tray.
+5.  **Usage:**
+    *   The application will run in the system tray (notification area).
     *   Left-click the tray icon to toggle the visibility of the status overlay window.
     *   Right-click the tray icon for options like "Show Window", "Hide Window", and "Exit".
-    *   Use the overlay window to type your thoughts, toggle your busy status, or access the "Settings" dialog to change your API configuration.
+    *   Use the overlay window to type your thoughts, toggle your busy status, or access the "Settings" button to change your API configuration if needed.
+    *   *Note: When running the application this way, console output is generally not visible as it's a GUI application.*
 
-## 🛠️ Building from Source (For Developers)
+## 🛠️ Getting Started (Building from Source / CLI - For Developers)
+
+These instructions are for developers who wish to build the application from its source code or run it in a way that shows console output for debugging.
 
 ### **Prerequisites**
--   **Windows:** MinGW/GCC (ucrt64 recommended), CMake 3.16+
+-   **Windows:** MinGW/GCC (ucrt64 recommended, e.g., from MSYS2), CMake 3.16+
 -   **Linux (Planned):** GCC, CMake 3.16+, X11 development libraries, libappindicator, libnotify
--   **Portfolio Setup:** A Vercel (or similar) hosted portfolio website with an API endpoint (`/api/status`) capable of receiving POST requests with JSON data and handling GET requests to display the status.
+-   **Portfolio Setup:** A Vercel (or similar) hosted portfolio website with an API endpoint (`/api/status`) capable of receiving POST requests with JSON data (authenticated with an API key) and handling GET requests to display the status.
 
 ### **1. Clone the Repository**
 ```bash
@@ -69,73 +76,70 @@ git clone https://github.com/yourusername/PersonalStatus.git
 cd PersonalStatus
 ```
 
-### **2. Configure Your API**
+### **2. Build the Application**
+
+**Windows (Development Build):**
 ```bash
-# In .env file:
-VERCEL_API_URL=https://your-project.vercel.app/api/status
-API_KEY=your-secret-api-key
+# This script cleans, configures with CMake, and builds a development version.
+.\build.bat
+
+# The script creates a 'build' directory.
+# The development executable will be: build\PersonalStatusMonitor.exe
+```
+*For creating a distributable release package (including static linking and packaging), use `package-release.bat` after ensuring `build-release.bat` is configured for signing if desired.*
+
+**Linux (Planned):**
+```bash
+# (Instructions for Linux will be added when support is complete)
+# chmod +x build.sh
+# ./build.sh
+# ./build/personal_status_monitor
 ```
 
-### **3. Build and Run**
+### **3. Run the Application (from CLI)**
 
 **Windows:**
 ```bash
-# Using build script (recommended)
-.\build.bat
+# Run the development executable from the project root:
+.\build\PersonalStatusMonitor.exe
 
-# The script creates a 'build' directory automatically
-# Executable will be: build\personal_status_monitor.exe
-
-# Run from project root (so it finds .env file)
-.\build\personal_status_monitor.exe
-# Application starts with:
-# System tray icon (notification area)
-# Desktop overlay window (can be hidden)
-```
-
-**Linux:**
-```bash
-# Using build script (installs dependencies)
-chmod +x build.sh
-./build.sh
-
-# Or manually with CMake
-mkdir build && cd build
-cmake ..
-make
-./personal_status_monitor
+# Running from the command line will show console output, useful for debugging.
+# On the first run (or if settings are cleared from the Registry), 
+# the Setup Dialog will appear to configure the API endpoint and key.
 ```
 
 ## 🧪 Testing Your Setup
 
-### **1. Verify Build Success**
-You should see:
+### **1. Verify Build Success (for source builds)**
+If building from source using `build.bat`, you should see output similar to:
 ```
 ✓ Build successful! Run personal_status_monitor.exe
 ```
 
-### **2. Check Application Startup**
-Expected console output:
+### **2. Check Application Startup (when run from CLI)**
+When running the development executable from a terminal (e.g., `.\build\PersonalStatusMonitor.exe`):
+Expected console output might include:
 ```
 Personal Status Monitor - Desktop Widget
-========================================
-Configuration loaded from .env file
-API URL: https://your-project.vercel.app/api/status
+Attempting to load settings from system storage...
+Settings loaded from system storage
+API URL: https://your-saved-api-url.com/api/status
 
 Starting local web server...
 Web server started on port 8081
 Creating overlay window...
-All components started. GUI running...
 System tray icon created successfully!
-If icon is hidden, drag it from overflow area to make it always visible        
-Creating overlay window...
-[WINDOW] Shown and brought to top
 Starting Vercel API push loop...
 All components started. Running in background...
-Right-click tray icon for options.
-
-[VERCEL] ✓ Sent: {"timestamp":1701234567,"thoughts":"","activeApps":["Visual Studio Code"],"busy":false}
 ```
+Or, on first run / if settings are not found:
+```
+Personal Status Monitor - Desktop Widget
+Attempting to load settings from system storage...
+No settings found or settings are invalid. Launching setup dialog...
+(Setup Dialog Appears, application continues after setup)
+```
+*(Actual messages may vary slightly based on application flow and settings state. If running the release `.exe` by double-clicking, this console output will not be visible.)*
 
 ### **3. Test Components**
 
@@ -175,10 +179,6 @@ sudo apt-get install build-essential cmake libx11-dev
 
 **Runtime Issues:**
 ```bash
-# Missing .env file
-cp .env.example .env
-# Edit with your actual values
-
 # API connection fails
 # Check Vercel deployment status
 # Verify API key matches Vercel environment variable
