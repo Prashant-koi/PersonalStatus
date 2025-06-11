@@ -19,12 +19,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Prasant Koirala"
             VALUE "FileDescription", "Personal Status Monitor - Real-time portfolio integration"
-            VALUE "FileVersion", "0.0.0.1"
+            VALUE "FileVersion", "0.1.0.0"
             VALUE "InternalName", "PersonalStatusMonitor"
             VALUE "LegalCopyright", "Copyright (C) 2024 Prasant Koirala. MIT License."
             VALUE "OriginalFilename", "PersonalStatusMonitor.exe"
             VALUE "ProductName", "Personal Status Monitor"
-            VALUE "ProductVersion", "0.0.0.1"
+            VALUE "ProductVersion", "0.0.0.0"
             VALUE "Comments", "Cross-platform desktop widget for live portfolio status updates"
         END
     END
