@@ -3,7 +3,7 @@
 #include "SetupDialog_Win32.h"
 #include <commctrl.h>
 #include <iostream>
-#include "./resources/resources.h"
+#include "../resources/resources.h"
 
 bool SetupDialog_Win32::showSetupDialog(std::string& endpoint, std::string& apiKey, bool isFirstRun) {
     DialogData data = { &endpoint, &apiKey, isFirstRun };

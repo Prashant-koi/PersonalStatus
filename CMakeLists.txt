@@ -11,17 +11,23 @@ set(COMMON_SOURCES
     src/common/ThoughtsManager.cpp
     src/common/WebServer.cpp
     src/common/OverlayWindow.cpp
-    src/common/SystemTray.cpp          # NEW
+    src/common/SystemTray.cpp
+    src/common/SettingsManager.cpp          
 )
 
 # Platform-specific sources
 if(WIN32)
+    # Enable resource compilation
+    enable_language(RC)
+    
     set(PLATFORM_SOURCES
         src/windows/OverlayWindow_Win32.cpp
-        src/windows/SystemTray_Win32.cpp    # NEW
+        src/windows/SystemTray_Win32.cpp
+        src/windows/SetupDialog_Win32.cpp    
+        src/resources/resources.rc           
     )
     set(PLATFORM_LIBRARIES
-        winhttp ws2_32 gdi32 user32 comctl32 shell32  # Added shell32 for tray
+        winhttp ws2_32 gdi32 user32 comctl32 shell32
     )
     add_definitions(-DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601)
     

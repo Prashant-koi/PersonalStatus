@@ -1,45 +1,44 @@
-#include "resource.h"
-
+#include <windows.h>
+#include "resources.h"
 
 IDI_APP_ICON ICON "app_icon.ico"
 
 // Setup Dialog
-IDD_SETUP_DIALOG DIALOGEX 0, 0, 400, 250
+IDD_SETUP_DIALOG DIALOG DISCARDABLE 0, 0, 400, 250
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Personal Status Monitor - Setup"
-FONT 9, "Segoe UI"
+FONT 8, "MS Sans Serif"
 BEGIN
-    ICON            IDI_APP_ICON, IDC_STATIC, 20, 20, 32, 32
-    LTEXT           "Welcome to Personal Status Monitor!", IDC_STATIC, 70, 25, 200, 15
-    LTEXT           "Please configure your portfolio integration:", IDC_STATIC, 70, 40, 200, 15
+    ICON            IDI_APP_ICON, -1, 20, 20, 32, 32
+    LTEXT           "Welcome to Personal Status Monitor!", -1, 70, 25, 200, 15
+    LTEXT           "Please configure your portfolio integration:", -1, 70, 40, 200, 15
     
-    LTEXT           "Portfolio API Endpoint:", IDC_STATIC, 30, 70, 100, 15
+    LTEXT           "Portfolio API Endpoint:", -1, 30, 70, 100, 15
     EDITTEXT        1001, 30, 85, 340, 14, ES_AUTOHSCROLL
-    LTEXT           "Example: https://your-portfolio.vercel.app/api/status", IDC_STATIC, 30, 102, 300, 12
+    LTEXT           "Example: https://your-portfolio.vercel.app/api/status", -1, 30, 102, 300, 12
     
-    LTEXT           "API Key (for security):", IDC_STATIC, 30, 125, 100, 15
+    LTEXT           "API Key (for security):", -1, 30, 125, 100, 15
     EDITTEXT        1002, 30, 140, 340, 14, ES_AUTOHSCROLL | ES_PASSWORD
-    LTEXT           "Example: psk_your_secure_random_key_here", IDC_STATIC, 30, 157, 300, 12
+    LTEXT           "Example: psk_your_secure_random_key_here", -1, 30, 157, 300, 12
     
     PUSHBUTTON      "Help", 1005, 30, 185, 50, 14
-    
     DEFPUSHBUTTON   "Save & Start", 1003, 260, 185, 60, 20
     PUSHBUTTON      "Cancel", 1004, 330, 185, 50, 20
 END
 
-// Settings Dialog (simplified version)
-IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 400, 200
+// Settings Dialog
+IDD_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 400, 200
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Personal Status Monitor - Settings"
-FONT 9, "Segoe UI"
+FONT 8, "MS Sans Serif"
 BEGIN
-    ICON            IDI_APP_ICON, IDC_STATIC, 20, 20, 32, 32
-    LTEXT           "Update your settings:", IDC_STATIC, 70, 25, 200, 15
+    ICON            IDI_APP_ICON, -1, 20, 20, 32, 32
+    LTEXT           "Update your settings:", -1, 70, 25, 200, 15
     
-    LTEXT           "Portfolio API Endpoint:", IDC_STATIC, 30, 60, 100, 15
+    LTEXT           "Portfolio API Endpoint:", -1, 30, 60, 100, 15
     EDITTEXT        1001, 30, 75, 340, 14, ES_AUTOHSCROLL
     
-    LTEXT           "API Key:", IDC_STATIC, 30, 100, 100, 15
+    LTEXT           "API Key:", -1, 30, 100, 100, 15
     EDITTEXT        1002, 30, 115, 340, 14, ES_AUTOHSCROLL | ES_PASSWORD
     
     DEFPUSHBUTTON   "Save", 1003, 260, 155, 60, 20
