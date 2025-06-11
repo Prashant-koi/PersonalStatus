@@ -5,6 +5,8 @@
 build/
 dist/
 out/
+PersonalStatusMonitor/
+PersonalStatusMonitor.zip
 
 # Compiled executables
 *.exe

@@ -3,6 +3,37 @@
 
 IDI_APP_ICON ICON "app_icon.ico"
 
+// Version Information for distribution
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 0,0,0,1
+PRODUCTVERSION 0,0,0,1
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "Prasant Koirala"
+            VALUE "FileDescription", "Personal Status Monitor - Real-time portfolio integration"
+            VALUE "FileVersion", "0.0.0.1"
+            VALUE "InternalName", "PersonalStatusMonitor"
+            VALUE "LegalCopyright", "Copyright (C) 2024 Prasant Koirala. MIT License."
+            VALUE "OriginalFilename", "PersonalStatusMonitor.exe"
+            VALUE "ProductName", "Personal Status Monitor"
+            VALUE "ProductVersion", "0.0.0.1"
+            VALUE "Comments", "Cross-platform desktop widget for live portfolio status updates"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
 // Setup Dialog
 IDD_SETUP_DIALOG DIALOG DISCARDABLE 0, 0, 400, 250
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
@@ -22,11 +53,11 @@ BEGIN
     LTEXT           "Example: psk_your_secure_random_key_here", -1, 30, 157, 300, 12
     
     PUSHBUTTON      "Help", 1005, 30, 185, 50, 14
+    
     DEFPUSHBUTTON   "Save & Start", 1003, 260, 185, 60, 20
     PUSHBUTTON      "Cancel", 1004, 330, 185, 50, 20
 END
 
-// Settings Dialog
 IDD_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 400, 200
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Personal Status Monitor - Settings"
