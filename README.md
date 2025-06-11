@@ -5,6 +5,7 @@
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
+Would appreciate a GitHub star if you are reading this :)
 
 ## 🎯 What It Does
 
