@@ -112,11 +112,19 @@ cd PersonalStatus
 
 ## 🌐 Setting Up Your Portfolio Backend (Required for Portfolio Integration)
 
-To enable the Personal Status Monitor desktop application to send updates to your portfolio website, you need to set up an API endpoint on your site. The following instructions are for a Next.js application (using the App Router).
+To enable the Personal Status Monitor desktop application to send updates to your portfolio website, you need to set up an API endpoint on your site. This endpoint will receive data from the desktop app and make it available for your portfolio frontend to display.
 
-**Both users of the pre-built application and developers building from source need to complete this backend setup if they want to display their status on their portfolio.**
+**Both users of the pre-built application and developers building from source need to complete one of the following backend setups if they want to display their status on their portfolio.**
 
-### **1. Create the API Route File**
+Choose the option that best fits your portfolio's technology stack:
+
+---
+
+### **Option 1: Next.js (App Router)**
+
+This is recommended if your portfolio is already built with Next.js or if you plan to use it.
+
+#### **1. Create the API Route File**
 
 Create the following file in your Next.js project:
 
@@ -144,7 +152,6 @@ function validateApiKey(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Require API key for POST (updating status)
     if (!API_KEY) {
       console.error('API Key not configured on the server.');
       return NextResponse.json(
@@ -170,9 +177,7 @@ export async function POST(request: NextRequest) {
         ...data,
         lastUpdated: new Date()
       };
-
       console.log('Status updated:', currentStatus);
-
       return NextResponse.json({
         success: true,
         message: 'Status updated successfully'
@@ -194,10 +199,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // GET is public - no API key required so visitors can see your status
-    const now = Date.now() / 1000; // Current time in seconds
-    // Consider status recent if updated in the last 10-15 seconds
-    // The desktop app sends updates every ~2 seconds.
+    const now = Date.now() / 1000;
     const isRecent = currentStatus.timestamp && (now - currentStatus.timestamp) < 15;
 
     if (!isRecent || currentStatus.thoughts === "App offline") {
@@ -210,7 +212,6 @@ export async function GET() {
         status: 'offline'
       });
     }
-
     return NextResponse.json({
       ...currentStatus,
       status: 'online'
@@ -225,11 +226,10 @@ export async function GET() {
 }
 
 export async function OPTIONS() {
-  // Handle CORS preflight requests
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*', // Adjust for production if needed
+      'Access-Control-Allow-Origin': '*', // Adjust for production
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
     },
@@ -237,35 +237,167 @@ export async function OPTIONS() {
 }
 ```
 
-### **2. Configure Your API Key**
+#### **2. Configure Your API Key (Next.js)**
 
-This API route uses an environment variable `PERSONAL_STATUS_API_KEY` to secure the `POST` endpoint.
-
-*   **Generate a Strong API Key:** Create a unique and strong string to use as your API key (e.g., `psk_yourRandomSecureKeyHere123!`).
-*   **Set the Environment Variable:**
-    *   If deploying to Vercel (recommended for Next.js), go to your project's settings on Vercel, navigate to "Environment Variables", and add `PERSONAL_STATUS_API_KEY` with the value you generated.
-    *   For local development, you can create a `.env.local` file in the root of your Next.js project and add the line:
+*   **Generate a Strong API Key:** Create a unique string (e.g., `psk_yourRandomSecureKeyHere123!`).
+*   **Set Environment Variable:**
+    *   **Vercel (Recommended):** Go to your project's settings on Vercel -> Environment Variables, and add `PERSONAL_STATUS_API_KEY` with your generated key.
+    *   **Local Development:** Create a `.env.local` file in your Next.js project root:
         ```
         PERSONAL_STATUS_API_KEY=psk_yourRandomSecureKeyHere123!
         ```
-*   **Important:** The API key you set here **must exactly match** the API key you enter into the Personal Status Monitor desktop application's setup dialog.
+*   **Important:** This API key must match the one entered into the Personal Status Monitor desktop app.
 
-### **3. Deploy Your Portfolio**
+#### **3. Deploy & Host (Next.js)**
+*   Deploy (or re-deploy) your Next.js application.
+*   **Hosting Platforms:** Vercel (highly recommended for Next.js), Netlify, AWS Amplify, Google Firebase Hosting (with Cloud Functions for backend), or other platforms supporting Next.js.
 
-After adding the API route and configuring the environment variable, deploy (or re-deploy) your Next.js portfolio application.
+#### **4. How This API Route Works (Next.js Specifics):**
+*   Next.js file-system routing automatically maps `app/api/status/route.ts` to the `/api/status` endpoint.
+*   The exported `GET`, `POST`, `OPTIONS` functions handle the respective HTTP methods.
+*   When deployed to Vercel, these often run as serverless functions.
 
-### **4. Configure the Desktop App**
+---
 
-When you run the Personal Status Monitor desktop application:
-*   In the setup dialog (or settings), enter your portfolio's API endpoint URL. This will typically be `https://your-portfolio-domain.com/api/status`.
-*   Enter the same API key you configured in your portfolio's environment variables.
+### **Option 2: Node.js with Express.js**
 
-### **How This API Route Works:**
-*   **`POST /api/status`**: This endpoint is used by the Personal Status Monitor desktop app to send status updates. It requires a valid `X-API-Key` header for authentication.
-*   **`GET /api/status`**: This endpoint is public and can be called by your portfolio website's frontend to fetch and display the current status. It checks if the last update was recent; otherwise, it reports an "offline" status.
-*   **`OPTIONS /api/status`**: This handles CORS (Cross-Origin Resource Sharing) preflight requests, allowing the desktop application (running on a different "origin") to communicate with your API.
+This is a good option if you have an existing Node.js backend, prefer Express.js, or are deploying to a platform more suited for traditional Node.js servers.
 
-With this backend setup, your desktop application will be able to securely update your portfolio website with your live status!
+#### **1. Create the Server File**
+
+Create a file (e.g., `server.js` or `statusApi.js`) in your Node.js project:
+
+```javascript
+// filepath: server.js (or your chosen filename)
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config(); // For loading .env file
+
+const app = express();
+const port = process.env.PORT || 3001; // Use environment variable for port
+
+// Your personal API key from environment variable
+const API_KEY = process.env.PERSONAL_STATUS_API_KEY;
+
+let currentStatus = {
+  thoughts: "App offline",
+  activeApps: [],
+  busy: false,
+  timestamp: 0,
+  lastUpdated: null
+};
+
+// CORS Configuration
+const corsOptions = {
+  origin: '*', // For production, restrict to your portfolio's domain: 'https://your-portfolio-domain.com'
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-API-Key']
+};
+app.use(cors(corsOptions));
+app.options('/api/status', cors(corsOptions)); // Enable pre-flight for /api/status
+
+app.use(express.json()); // Middleware to parse JSON bodies
+
+function validateApiKey(req) {
+  const apiKeyFromHeader = req.headers['x-api-key']; // Headers are often lowercased by servers
+  return apiKeyFromHeader === API_KEY;
+}
+
+// POST endpoint to update status
+app.post('/api/status', (req, res) => {
+  if (!API_KEY) {
+    console.error('API Key not configured on the server.');
+    return res.status(500).json({ error: 'Server configuration error: API Key missing' });
+  }
+  if (!validateApiKey(req)) {
+    return res.status(401).json({ error: 'Unauthorized - Invalid API key' });
+  }
+
+  const data = req.body;
+  if (typeof data.thoughts === 'string' &&
+      Array.isArray(data.activeApps) &&
+      typeof data.busy === 'boolean' &&
+      typeof data.timestamp === 'number') {
+    currentStatus = { ...data, lastUpdated: new Date() };
+    console.log('Status updated:', currentStatus);
+    return res.json({ success: true, message: 'Status updated successfully' });
+  } else {
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+});
+
+// GET endpoint to fetch status
+app.get('/api/status', (req, res) => {
+  const now = Date.now() / 1000;
+  const isRecent = currentStatus.timestamp && (now - currentStatus.timestamp) < 15;
+
+  if (!isRecent || currentStatus.thoughts === "App offline") {
+    return res.json({
+      thoughts: "App offline",
+      activeApps: [],
+      busy: false,
+      timestamp: 0,
+      lastUpdated: null,
+      status: 'offline'
+    });
+  }
+  return res.json({ ...currentStatus, status: 'online' });
+});
+
+app.listen(port, () => {
+  console.log(`Personal Status API server listening on port ${port}`);
+  if (!API_KEY) {
+    console.warn('Warning: PERSONAL_STATUS_API_KEY is not set. POST requests will fail.');
+  }
+});
+```
+
+#### **2. Install Dependencies (Node.js/Express.js)**
+In your Node.js project directory, install the necessary packages:
+```bash
+npm install express cors dotenv
+# or
+yarn add express cors dotenv
+```
+
+#### **3. Configure Your API Key (Node.js/Express.js)**
+*   **Generate a Strong API Key:** Create a unique string (e.g., `psk_yourRandomSecureKeyHere123!`).
+*   **Set Environment Variable:**
+    *   Create a `.env` file in your Node.js project root (ensure `.env` is in your `.gitignore`):
+        ```
+        PERSONAL_STATUS_API_KEY=psk_yourRandomSecureKeyHere123!
+        PORT=3001 # Optional: specify a port
+        ```
+    *   When deploying, set `PERSONAL_STATUS_API_KEY` (and `PORT` if needed) as environment variables on your hosting platform.
+*   **Important:** This API key must match the one entered into the Personal Status Monitor desktop app.
+
+#### **4. Run and Deploy (Node.js/Express.js)**
+*   **Local Development:** Run `node server.js`.
+*   **Deployment & Hosting Platforms:**
+    *   Heroku, Render, Railway
+    *   AWS (EC2, Elastic Beanstalk, Fargate, Lambda with API Gateway)
+    *   Google Cloud (App Engine, Cloud Run, Compute Engine)
+    *   DigitalOcean (App Platform, Droplets)
+    *   Azure (App Service, Functions)
+    *   Fly.io
+    *   Ensure your hosting platform allows you to set environment variables and runs your Node.js application (e.g., via a `package.json` start script: `"start": "node server.js"`).
+
+---
+
+### **Common Steps After Backend Setup**
+
+#### **1. Configure the Desktop App**
+No matter which backend option you choose:
+*   When you run the Personal Status Monitor desktop application, in the setup dialog (or settings):
+    *   Enter your portfolio's full API endpoint URL (e.g., `https://your-portfolio-domain.com/api/status` or `http://localhost:3001/api/status` for local Express testing).
+    *   Enter the same API key you configured for your chosen backend.
+
+#### **2. How The API Logic Works (General)**
+*   **`POST /api/status`**: Used by the desktop app to send status updates. Requires `X-API-Key` header.
+*   **`GET /api/status`**: Publicly fetches current status for your portfolio frontend.
+*   **`OPTIONS /api/status`**: Handles CORS preflight requests.
+
+With your chosen backend setup, your desktop application will be able to securely update your portfolio website!
 
 ## 🧪 Testing Your Setup
 
