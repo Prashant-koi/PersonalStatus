@@ -6,6 +6,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/Prashant-koi/PersonalStatus)](https://github.com/Prashant-koi/PersonalStatus/releases/latest)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
+
 Would appreciate a GitHub star if you are reading this :)
 
 ## 🌟 Features (v0.1.0 - Windows Release)
