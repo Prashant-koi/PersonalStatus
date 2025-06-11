@@ -2,44 +2,71 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue.svg)](https://github.com/yourusername/personal-status-monitor)
-[![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
+[![Language](https://img.shields.io/badge/language-C++17-blue.svg)](https://isocpp.org/)
+[![Latest Release](https://img.shields.io/github/v/release/yourusername/PersonalStatus)](https://github.com/yourusername/PersonalStatus/releases/latest)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
 Would appreciate a GitHub star if you are reading this :)
 
-## 🎯 What It Does
+## 🌟 Features (v0.1.0 - Windows Release)
 
-This app creates a cross-platform desktop widget that runs in the background with system tray integration:
+This app creates a desktop widget that runs in the background with system tray integration:
 
-- 📝 **Real-time thoughts sharing** - Type what you're thinking, visitors see it instantly
-- 🟢 **Availability status** - Toggle between busy/free
-- 🖥️ **App monitoring** - Automatically detects development tools you're using
-- 🚀 **Live portfolio integration** - Updates your website every 2 seconds
-- 🔒 **Secure API** - Protected with API key authentication
-- 🌍 **Cross-platform** - Works on Windows and Linux
-- 🎯 **System Tray Integration** - Runs in background, accessible via tray icon
-- 🔄 **Show/Hide Toggle** - Left-click tray icon to show/hide window
-- 📱 **Context Menu** - Right-click tray for options (Show/Hide/Exit)
-- 🧹 **Graceful Shutdown** - Clean exit with proper thread cleanup
+-   📝 **Real-time Thoughts Sharing**: Type what you're thinking, and visitors see it instantly on your portfolio.
+-   🟢 **Availability Status**: Easily toggle between "Free" and "Busy" states.
+-   🖥️ **Application Monitoring**: Automatically detects and displays key applications you're currently using (e.g., VS Code, browsers).
+-   🚀 **Live Portfolio Integration**: Updates your website (via a Vercel API endpoint or similar) every few seconds.
+-   🔒 **Secure API Communication**: Uses API key authentication for sending data to your portfolio.
+-   💾 **Persistent Settings**: Remembers your API endpoint and key (securely stored in Windows Registry).
+-   ✨ **User-Friendly Setup**:
+    *   **First-Run Setup Dialog**: Guides users through initial configuration.
+    *   **Settings Dialog**: Allows users to update API endpoint and key later via the overlay window.
+-   🎯 **System Tray Integration (Windows)**:
+    *   Runs unobtrusively in the system tray (notification area).
+    *   Left-click tray icon to show/hide the main status window.
+    *   Right-click tray icon for a context menu (Show/Hide/Exit).
+-   🎨 **Customizable Overlay Window**:
+    *   Semi-transparent, draggable window to display and input status.
+    *   Includes "Settings" button to reconfigure API details.
+-   🧹 **Graceful Shutdown**: Ensures all threads and resources are cleaned up properly on exit.
+-   📦 **Standalone Executable (Windows)**: Distributed as a single `.exe` file, statically linked with no external dependencies required.
+-   🌍 **Cross-Platform Foundation**: Built with C++17 and CMake, with Linux support planned.
 
-## 🚀 Quick Start
+## 🚀 Getting Started (Windows Release v0.1.0)
+
+The easiest way to use Personal Status Monitor on Windows is to download the latest release.
+
+1.  **Download the Latest Release:**
+    *   Go to the [Releases Page](https://github.com/yourusername/PersonalStatus/releases/latest).
+    *   Download the `PersonalStatusMonitor.zip` file.
+
+2.  **Extract and Run:**
+    *   Extract the `PersonalStatusMonitor.zip` file to any folder on your computer.
+    *   Double-click `PersonalStatusMonitor.exe` to start the application.
+
+3.  **First-Time Setup:**
+    *   On the first run, a **Setup Dialog** will appear.
+    *   **Enter your Portfolio API Endpoint**: This is the URL your portfolio website uses to receive status updates (e.g., `https://your-portfolio.vercel.app/api/status`).
+    *   **Enter your API Key**: This is the secret key used to authenticate with your API endpoint.
+    *   Click "Save & Start".
+
+4.  **Usage:**
+    *   The application will run in the system tray.
+    *   Left-click the tray icon to toggle the visibility of the status overlay window.
+    *   Right-click the tray icon for options like "Show Window", "Hide Window", and "Exit".
+    *   Use the overlay window to type your thoughts, toggle your busy status, or access the "Settings" dialog to change your API configuration.
+
+## 🛠️ Building from Source (For Developers)
 
 ### **Prerequisites**
-- **Windows:** MinGW/GCC, CMake 3.16+
-- **Linux:** GCC, CMake 3.16+, X11 development libraries
-- **Both:** Vercel account, Next.js portfolio website
+-   **Windows:** MinGW/GCC (ucrt64 recommended), CMake 3.16+
+-   **Linux (Planned):** GCC, CMake 3.16+, X11 development libraries, libappindicator, libnotify
+-   **Portfolio Setup:** A Vercel (or similar) hosted portfolio website with an API endpoint (`/api/status`) capable of receiving POST requests with JSON data and handling GET requests to display the status.
 
-### **1. Clone and Setup**
+### **1. Clone the Repository**
 ```bash
-git clone https://github.com/yourusername/personal-status-monitor
-cd personal-status-monitor
-
-# Copy environment template
-cp .env.example .env
-
-# Edit with your values
-notepad .env  # Windows
-nano .env     # Linux
+git clone https://github.com/yourusername/PersonalStatus.git
+cd PersonalStatus
 ```
 
 ### **2. Configure Your API**
