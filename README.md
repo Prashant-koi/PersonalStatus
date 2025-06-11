@@ -313,13 +313,13 @@ No settings found or settings are invalid. Launching setup dialog...
 - [✅] "Free/Busy" button toggles correctly
 - [✅] Window is draggable
 
-**Local Server Test:**
+**Test for your Portfolio Website:**
 ```bash
 # Should return JSON status
-curl http://localhost:8081
+curl https://your-saved-api-url.com/api/status
 
 # Or visit in browser
-http://localhost:8081
+https://your-saved-api-url.com/api/status
 ```
 
 ### **4. Troubleshooting**
