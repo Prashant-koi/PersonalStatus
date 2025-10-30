@@ -1,11 +1,13 @@
 # Personal Status Monitor
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue.svg)](https://github.com/Prashant-koi/personal-status-monitor)
+[![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)](https://github.com/Prashant-koi/PersonalStatus)
 [![Language](https://img.shields.io/badge/language-C++17-blue.svg)](https://isocpp.org/)
-[![Latest Release](https://img.shields.io/github/v/release/Prashant-koi/PersonalStatus)](https://github.com/Prashant-koi/PersonalStatus/releases/latest)
+[![Latest Release](https://img.shields.io/badge/version-0.1.0--windows-brightgreen)](https://github.com/Prashant-koi/PersonalStatus/releases/latest)
 
 A real-time desktop widget that shows your current thoughts and active applications on your portfolio website.
+
+> **Note:** This is the **Windows-only release (v0.1.0)**. Linux/Hyprland support coming in v0.2.0!
 
 Would appreciate a GitHub star if you are reading this :)
 
@@ -33,7 +35,41 @@ This app creates a desktop widget that runs in the background with system tray i
 -   📦 **Standalone Executable (Windows)**: Distributed as a single `.exe` file, statically linked with no external dependencies required.
 -   🌍 **Cross-Platform Foundation**: Built with C++17 and CMake, with Linux support planned.
 
-## 🚀 Getting Started (Using the Release Package - Recommended for Users)
+## 🚀 Getting Started (Windows Users)
+
+### **Quick Start (Recommended)**
+1. Download the latest `PersonalStatusMonitor.zip` from [Releases](https://github.com/Prashant-koi/PersonalStatus/releases)
+2. Extract and run `PersonalStatusMonitor.exe`
+3. Follow the setup wizard
+
+### **Building from Source**
+
+**Prerequisites:**
+- Windows 10/11
+- MinGW/GCC (ucrt64 recommended from MSYS2)
+- CMake 3.16+
+
+**Build Steps:**
+```bash
+git clone https://github.com/yourusername/PersonalStatus.git
+cd PersonalStatus
+.\build.bat
+```
+
+## 📋 Roadmap
+
+- [x] Windows implementation (v0.1.0) ✅
+- [ ] Hyprland/Wayland support (v0.2.0) - Target: November 2024
+- [ ] GNOME/KDE support (v0.3.0)
+- [ ] macOS support (v0.4.0)
+
+## 💬 Linux Users
+
+Linux support is actively being developed! Watch this repo to get notified when v0.2.0 (Hyprland/Wayland) is released.
+
+**Want to contribute?** Check out the [`hyprland-wayland`](https://github.com/yourusername/PersonalStatus/tree/hyprland-wayland) branch.
+
+## 🛠️ Getting Started (Using the Release Package - Recommended for Users)
 
 This is the easiest way to use Personal Status Monitor on Windows. You'll download a pre-built package containing the application.
 
