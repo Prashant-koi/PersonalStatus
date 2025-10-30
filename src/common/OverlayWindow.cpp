@@ -2,13 +2,17 @@
 
 #ifdef _WIN32
     #include "../windows/OverlayWindow_Win32.h"
+#elif __linux__
+    #include "../linux/OverlayWindow_Wayland.h"
 #endif
 
-// Factory method - Windows only for v0.1.0
+// Factory method - creates platform-specific window
 OverlayWindow* OverlayWindow::createPlatformWindow() {
     #ifdef _WIN32
         return new OverlayWindow_Win32();
+    #elif __linux__
+        return new OverlayWindow_Wayland();
     #else
-        #error "This version only supports Windows. Linux support coming in v0.2.0"
+        #error "Unsupported platform"
     #endif
 }

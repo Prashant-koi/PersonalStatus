@@ -9,7 +9,7 @@ public:
     struct AppInfo {
         std::string name;
         std::string processName;
-        bool isRunning;
+        bool running;  // Fixed! Change from 'isRunning' to 'running'
     };
 
     AppDetector();

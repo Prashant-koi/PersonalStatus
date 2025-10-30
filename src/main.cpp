@@ -4,8 +4,22 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <csignal>
+
+#ifdef _WIN32
 #include <windows.h>
 #include <winhttp.h>
+#pragma comment(lib, "winhttp.lib")
+#include "windows/SetupDialog_Win32.h"
+#endif
+
+#ifdef __linux__
+#include <gtk/gtk.h>
+#include <curl/curl.h>
+#include "linux/SetupDialog_Wayland.h"
+#endif
+
 #include "common/AppDetector.h"
 #include "common/WebServer.h"
 #include "common/OverlayWindow.h"
@@ -13,12 +27,63 @@
 #include "common/config.h"
 #include "common/SystemTray.h"
 #include "common/SettingsManager.h"
-#include "windows/SetupDialog_Win32.h"
-#include <atomic>
 
-#pragma comment(lib, "winhttp.lib")
+std::atomic<bool> g_shouldExit(false);
 
-// Function to convert string to wide string
+void signalHandler(int signal) {
+    std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
+    g_shouldExit = true;
+}
+
+#ifdef __linux__
+// Linux HTTP implementation using curl
+struct CurlResponse {
+    std::string data;
+    long response_code;
+};
+
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, CurlResponse* response) {
+    size_t total_size = size * nmemb;
+    response->data.append((char*)contents, total_size);
+    return total_size;
+}
+
+bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl, const std::string& apiKey) {
+    CURL* curl = curl_easy_init();
+    if (!curl) return false;
+    
+    CurlResponse response;
+    struct curl_slist* headers = nullptr;
+    
+    // Set headers
+    std::string contentType = "Content-Type: application/json";
+    std::string apiKeyHeader = "X-API-Key: " + apiKey;
+    
+    headers = curl_slist_append(headers, contentType.c_str());
+    headers = curl_slist_append(headers, apiKeyHeader.c_str());
+    
+    // Configure curl
+    curl_easy_setopt(curl, CURLOPT_URL, apiUrl.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+    
+    // Perform request
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response.response_code);
+    
+    // Cleanup
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    
+    return (res == CURLE_OK && response.response_code >= 200 && response.response_code < 300);
+}
+#endif
+
+#ifdef _WIN32
+// Windows HTTP implementation (existing code)
 std::wstring stringToWstring(const std::string& str) {
     if (str.empty()) return std::wstring();
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
@@ -27,7 +92,6 @@ std::wstring stringToWstring(const std::string& str) {
     return wstrTo;
 }
 
-// Function to extract hostname from URL
 std::wstring extractHostname(const std::string& url) {
     size_t start = url.find("://");
     if (start == std::string::npos) return L"";
@@ -40,7 +104,6 @@ std::wstring extractHostname(const std::string& url) {
     return stringToWstring(hostname);
 }
 
-// Function to extract path from URL
 std::wstring extractPath(const std::string& url) {
     size_t start = url.find("://");
     if (start == std::string::npos) return L"/";
@@ -53,7 +116,6 @@ std::wstring extractPath(const std::string& url) {
     return stringToWstring(path);
 }
 
-// Function to send JSON using Windows HTTP API with API key
 bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl, const std::string& apiKey) {
     HINTERNET hSession = NULL;
     HINTERNET hConnect = NULL;
@@ -138,22 +200,28 @@ bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl, con
     
     return success;
 }
-
-void clearScreen() {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
 #endif
-}
 
+int main(int argc, char* argv[]) {
+    std::cout << "Personal Status Monitor - Starting..." << std::endl;
 
+#ifdef __linux__
+    // Initialize GTK3 and curl on Linux
+    std::cout << "Initializing GTK3..." << std::endl;
+    if (!gtk_init_check(&argc, &argv)) {
+        std::cerr << "Failed to initialize GTK3!" << std::endl;
+        return 1;
+    }
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    std::cout << "GTK3 and curl initialized" << std::endl;
+#endif
 
-int main() {
-    std::atomic<bool> shouldExit(false);
+    // Setup signal handlers
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
     
-    std::cout << "Personal Status Monitor - Desktop Widget" << std::endl;
-    std::cout << "========================================" << std::endl;
+    std::cout << "Personal Status Monitor - Desktop Widget (Hyprland/Wayland Edition)" << std::endl;
+    std::cout << "=================================================================" << std::endl;
     
     std::string VERCEL_API_URL, API_KEY;
     
@@ -161,13 +229,15 @@ int main() {
     if (!SettingsManager::hasValidSettings()) {
         std::cout << "First time setup required..." << std::endl;
         
-        // Show setup dialog
+#ifdef _WIN32
         if (!SetupDialog_Win32::showSetupDialog(VERCEL_API_URL, API_KEY, true)) {
+#elif __linux__
+        if (!SetupDialog_Wayland::showSetupDialog(VERCEL_API_URL, API_KEY)) {
+#endif
             std::cout << "Setup cancelled. Exiting..." << std::endl;
             return 0;
         }
         
-        // Save settings
         if (SettingsManager::saveSettings(VERCEL_API_URL, API_KEY)) {
             std::cout << "Settings saved successfully!" << std::endl;
         } else {
@@ -175,7 +245,6 @@ int main() {
             return 1;
         }
     } else {
-        // Load existing settings
         if (!SettingsManager::loadSettings(VERCEL_API_URL, API_KEY)) {
             std::cerr << "Failed to load settings!" << std::endl;
             return 1;
@@ -184,188 +253,129 @@ int main() {
     }
     
     std::cout << "API URL: " << VERCEL_API_URL << std::endl;
-    std::cout << std::endl;
     
-    // Initialize components
-    AppDetector detector;
-    ThoughtsManager thoughtsManager;
-    WebServer server(8081);
-    
-    server.setAppDetector(&detector);
-    server.setThoughtsManager(&thoughtsManager);
-    
-    std::cout << "Starting local web server..." << std::endl;
-    
-    // Start web server in background
-    std::thread serverThread(&WebServer::start, &server);
-    
-    // Create system tray
-    std::unique_ptr<SystemTray> tray(SystemTray::createPlatformTray());
-    
-    // Setup tray menu
-    tray->addMenuItem("Show Window", 1);
-    tray->addMenuItem("Hide Window", 2);
-    tray->addSeparator();
-    tray->addMenuItem("Exit", 99);
-    
-    // Create tray
-    if (!tray->create()) {
-        std::cerr << "Failed to create system tray" << std::endl;
-        return 1;
-    }
-    
-    std::cout << "Creating overlay window..." << std::endl;
-    
-    // Create platform-specific overlay using factory method
-    std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
-    
-    if (!overlay->create()) {
-        std::cerr << "Failed to create overlay window" << std::endl;
-        return 1;
-    }
-    
-    overlay->setThoughtsManager(&thoughtsManager);
-    overlay->show();
-    
-    // Setup tray callbacks
-    bool windowVisible = true;
-    tray->onMenuItemClicked = [&](int id) {
-        std::cout << "[MAIN] Menu item clicked: " << id << std::endl;
-        switch(id) {
-            case -1: // Left click
-                if (windowVisible) {
-                    std::cout << "[MAIN] Hiding window..." << std::endl;
-                    overlay->hide();
-                    windowVisible = false;
-                    
-                } else {
-                    std::cout << "[MAIN] Showing window..." << std::endl;
+    try {
+        // Initialize components
+        AppDetector detector;
+        ThoughtsManager thoughtsManager;
+        WebServer server(8081);
+        
+        server.setAppDetector(&detector);
+        server.setThoughtsManager(&thoughtsManager);
+        
+        std::cout << "Starting web server..." << std::endl;
+        std::thread serverThread(&WebServer::start, &server);
+        
+        std::cout << "Creating system tray..." << std::endl;
+        std::unique_ptr<SystemTray> tray(SystemTray::createPlatformTray());
+        if (!tray->create()) {
+            std::cerr << "Failed to create system tray" << std::endl;
+            return 1;
+        }
+        
+        std::cout << "Creating overlay window..." << std::endl;
+        std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
+        if (!overlay->create()) {
+            std::cerr << "Failed to create overlay window" << std::endl;
+            return 1;
+        }
+        
+        overlay->setThoughtsManager(&thoughtsManager);
+        overlay->show();
+        
+        // Setup tray callbacks
+        bool windowVisible = true;
+        tray->onMenuItemClicked = [&](int id) {
+            switch(id) {
+                case 1: // Show Window
                     overlay->show();
                     windowVisible = true;
-                    
-                }
-                break;
-                
-            case 1: // Show Window
-                std::cout << "[MAIN] Showing window via menu..." << std::endl;
-                overlay->show();
-                windowVisible = true;
-                
-                break;
-                
-            case 2: // Hide Window
-                std::cout << "[MAIN] Hiding window via menu..." << std::endl;
-                overlay->hide();
-                windowVisible = false;
-                
-                break;
-                
-            case 99: // Exit - UPDATED GRACEFUL SHUTDOWN
-                std::cout << "Initiating graceful shutdown..." << std::endl;
-                
-                // Step 1: Set shutdown flag to stop threads
-                shouldExit = true;
-                
-                // Step 2: Hide and destroy window
-                if (windowVisible) {
+                    break;
+                case 2: // Hide Window
                     overlay->hide();
+                    windowVisible = false;
+                    break;
+                case 99: // Exit
+                    g_shouldExit = true;
+                    break;
+            }
+        };
+        
+        // Start API push thread
+        std::thread apiThread([&]() {
+            while (!g_shouldExit) {
+                detector.detectRunningApps();
+                auto runningApps = detector.getRunningApps();
+                
+                std::vector<std::string> activeApps;
+                for (const auto& app : runningApps) {
+                    if (activeApps.size() < 2) {
+                        activeApps.push_back(app.name);
+                    }
                 }
                 
-                // Step 3: Remove tray icon
-                tray->hide();
+                std::ostringstream json;
+                json << "{";
+                json << "\"timestamp\":" << std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count() << ",";
+                json << "\"thoughts\":\"" << thoughtsManager.getCurrentThoughts() << "\",";
+                json << "\"activeApps\":[";
                 
-                // Step 4: Stop web server
-                std::cout << "Stopping web server..." << std::endl;
-                server.stop();
+                for (size_t i = 0; i < activeApps.size(); ++i) {
+                    json << "\"" << activeApps[i] << "\"";
+                    if (i < activeApps.size() - 1) json << ",";
+                }
                 
-                // Step 5: Exit message loop
-                std::cout << "Exiting application..." << std::endl;
-                PostQuitMessage(0);
-                break;
-        }
-    };
-    
-    std::cout << "Starting Vercel API push loop..." << std::endl;
-    
-    // Start Vercel API push loop (every 2 seconds) - UPDATED
-    std::thread vercelPushThread([&detector, &thoughtsManager, &VERCEL_API_URL, &API_KEY, &shouldExit]() {
-        while (!shouldExit) {  // ← Check shutdown flag
-            // Detect running apps
-            detector.detectRunningApps();
-            auto runningApps = detector.getRunningApps();
-            
-            // Get top 2 running apps
-            std::vector<std::string> activeApps;
-            for (const auto& app : runningApps) {
-                if (activeApps.size() < 2) {
-                    activeApps.push_back(app.name);
+                json << "],";
+                json << "\"busy\":" << (thoughtsManager.isBusy() ? "true" : "false");
+                json << "}";
+                
+                if (sendToVercelAPI(json.str(), VERCEL_API_URL, API_KEY)) {
+                    std::cout << "[API] ✓ Data sent successfully" << std::endl;
+                } else {
+                    std::cout << "[API] ✗ Failed to send data" << std::endl;
+                }
+                
+                for (int i = 0; i < 20 && !g_shouldExit; ++i) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }
-            
-            // Generate JSON with timestamp
-            std::ostringstream json;
-            json << "{";
-            json << "\"timestamp\":" << std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count() << ",";
-            json << "\"thoughts\":\"" << thoughtsManager.getCurrentThoughts() << "\",";
-            json << "\"activeApps\":[";
-            
-            for (size_t i = 0; i < activeApps.size(); ++i) {
-                json << "\"" << activeApps[i] << "\"";
-                if (i < activeApps.size() - 1) json << ",";
-            }
-            
-            json << "],";
-            json << "\"busy\":" << (thoughtsManager.isBusy() ? "true" : "false");
-            json << "}";
-            
-            // Send to Vercel API
-            if (sendToVercelAPI(json.str(), VERCEL_API_URL, API_KEY)) {
-                std::cout << "[VERCEL] ✓ Sent: " << json.str() << std::endl;
-            } else {
-                std::cout << "[VERCEL] ✗ Failed to send data (check API key)" << std::endl;
-            }
-            
-            // Wait 2 seconds, but check for shutdown every 100ms
-            for (int i = 0; i < 20 && !shouldExit; ++i) {  // ← Check shutdown during wait
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
+        });
+        
+        std::cout << "Application started successfully!" << std::endl;
+        
+        // Main loop
+#ifdef __linux__
+        while (!g_shouldExit) {
+            g_main_context_iteration(NULL, TRUE);
         }
-        std::cout << "[VERCEL] Thread stopped gracefully" << std::endl;  // ← Confirmation
-    });
-    
-    std::cout << "All components started. Running in background..." << std::endl;
-    std::cout << "Right-click tray icon for options." << std::endl;
-    
-    // Non-blocking message loop
-    overlay->messageLoop();  // This blocks until PostQuitMessage(0)
-    
-    // GRACEFUL CLEANUP SEQUENCE
-    std::cout << "Message loop ended, cleaning up..." << std::endl;
-    
-    // Step 1: Ensure shutdown flag is set
-    shouldExit = true;
-    
-    // Step 2: Stop web server (if not already stopped)
-    std::cout << "Stopping web server..." << std::endl;
-    server.stop();
-    
-    // Step 3: Wait for server thread to finish
-    std::cout << "Waiting for server thread..." << std::endl;
-    if (serverThread.joinable()) {
-        serverThread.join();
-        std::cout << "Server thread joined successfully" << std::endl;
+#else
+        overlay->messageLoop();
+#endif
+        
+        // Cleanup
+        std::cout << "Shutting down..." << std::endl;
+        g_shouldExit = true;
+        
+        server.stop();
+        
+        if (serverThread.joinable()) {
+            serverThread.join();
+        }
+        
+        if (apiThread.joinable()) {
+            apiThread.join();
+        }
+        
+#ifdef __linux__
+        curl_global_cleanup();
+#endif
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << std::endl;
+        return 1;
     }
     
-    // Step 4: Wait for Vercel API thread to finish
-    std::cout << "Waiting for Vercel API thread..." << std::endl;
-    if (vercelPushThread.joinable()) {
-        vercelPushThread.join();  // ← Changed from detach() to join()
-        std::cout << "Vercel API thread joined successfully" << std::endl;
-    }
-    
-    // Step 5: Final cleanup
-    std::cout << "All threads stopped. Goodbye!" << std::endl;
-    
+    std::cout << "Personal Status Monitor - Exited cleanly" << std::endl;
     return 0;
 }
