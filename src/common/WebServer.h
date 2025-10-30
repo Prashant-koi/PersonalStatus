@@ -1,34 +1,33 @@
 #ifndef WEB_SERVER_H
 #define WEB_SERVER_H
 
-#ifdef _WIN32
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#endif
-
-#include "AppDetector.h"
-#include "ThoughtsManager.h"
 #include <string>
+#include <atomic>
+
+// Forward declarations
+class AppDetector;
+class ThoughtsManager;
 
 class WebServer {
 public:
-    WebServer(int port = 8080);
+    WebServer(int port);
     ~WebServer();
-    void start();
+    
+    bool start();
     void stop();
     void setAppDetector(AppDetector* detector);
     void setThoughtsManager(ThoughtsManager* manager);
 
 private:
     int port;
+    std::atomic<bool> running;
     AppDetector* appDetector;
     ThoughtsManager* thoughtsManager;
-    bool running;
-#ifdef _WIN32
-    SOCKET serverSocket;
-#endif
-    std::string generateJSON() const;
-    void handleRequest(int clientSocket);
+    int serverSocket;
+    
+    void acceptConnections();
+    void handleClient(int clientSocket);
+    std::string processRequest(const std::string& request);
 };
 
 #endif

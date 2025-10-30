@@ -1,22 +1,39 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Linux Hyprland/Wayland",
             "includePath": [
-                "${workspaceFolder}/**",
-                "C:/Users/koira/vcpkg/installed/x64-windows/include"
+                "${workspaceFolder}/src",
+                "/usr/include/gtk-4.0",
+                "/usr/include/gtk-layer-shell",
+                "/usr/include/glib-2.0",
+                "/usr/lib/glib-2.0/include",
+                "/usr/include/pango-1.0",
+                "/usr/include/cairo",
+                "/usr/include/gdk-pixbuf-2.0",
+                "/usr/include/atk-1.0",
+                "/usr/include/wayland",
+                "/usr/include/harfbuzz",
+                "/usr/include/freetype2",
+                "/usr/include/libpng16",
+                "/usr/include/pixman-1",
+                "/usr/include/gio-unix-2.0",
+                "/usr/include/cloudproviders",
+                "/usr/include/at-spi2-atk/2.0",
+                "/usr/include/at-spi-2.0",
+                "/usr/include/dbus-1.0",
+                "/usr/lib/dbus-1.0/include"
             ],
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "_WIN32_WINNT=0x0601"
+                "WAYLAND_BUILD",
+                "HYPRLAND_BUILD",
+                "__linux__"
             ],
-            "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": "C:/mingw64/bin/g++.exe",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4
