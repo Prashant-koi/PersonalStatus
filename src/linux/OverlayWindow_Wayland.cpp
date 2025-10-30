@@ -49,19 +49,31 @@ bool OverlayWindow_Wayland::initializeGtk() {
 void OverlayWindow_Wayland::setupLayerShell() {
     std::cout << "Setting up layer shell..." << std::endl;
     
-    // Initialize layer shell
+    // Initialize layer shell for this window
     gtk_layer_init_for_window(GTK_WINDOW(window));
     
-    // Set layer shell properties
+    // Set layer (OVERLAY layer is above everything)
     gtk_layer_set_layer(GTK_WINDOW(window), GTK_LAYER_SHELL_LAYER_OVERLAY);
+    
+    // Set anchors (top-right corner)
     gtk_layer_set_anchor(GTK_WINDOW(window), GTK_LAYER_SHELL_EDGE_TOP, TRUE);
     gtk_layer_set_anchor(GTK_WINDOW(window), GTK_LAYER_SHELL_EDGE_RIGHT, TRUE);
     
-    // Set margin from edges
+    // Set margins from edges
     gtk_layer_set_margin(GTK_WINDOW(window), GTK_LAYER_SHELL_EDGE_TOP, 20);
     gtk_layer_set_margin(GTK_WINDOW(window), GTK_LAYER_SHELL_EDGE_RIGHT, 20);
     
-    std::cout << "Layer shell setup complete" << std::endl;
+    // IMPORTANT: Allow keyboard input
+    gtk_layer_set_keyboard_mode(GTK_WINDOW(window), GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
+    
+    // Set namespace for window manager
+    gtk_layer_set_namespace(GTK_WINDOW(window), "personal-status-monitor");
+    
+    // Make sure window can receive focus
+    gtk_window_set_accept_focus(GTK_WINDOW(window), TRUE);
+    gtk_window_set_focus_on_map(GTK_WINDOW(window), TRUE);
+    
+    std::cout << "Layer shell configured" << std::endl;
 }
 
 void OverlayWindow_Wayland::createWidgets() {
@@ -91,18 +103,23 @@ void OverlayWindow_Wayland::createWidgets() {
     // Thoughts section
     GtkWidget* thoughtsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     
-    GtkWidget* thoughtsTitle = gtk_label_new("💭 Your Thoughts (type to update):");
+    GtkWidget* thoughtsTitle = gtk_label_new("💭 Click and type your thoughts:");  // ← Update label
     gtk_widget_set_halign(thoughtsTitle, GTK_ALIGN_START);
     
-    // Thoughts entry with REAL-TIME updates
+    // Thoughts entry - MAKE IT FOCUSABLE
     thoughtsEntry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(thoughtsEntry), "What are you working on?");
     
-    // Connect to REAL-TIME text changes (no Enter key needed!)
-    g_signal_connect(thoughtsEntry, "changed", G_CALLBACK(onThoughtsChanged), this);
+    // Make entry focusable and grab focus when window shows
+    gtk_widget_set_can_focus(thoughtsEntry, TRUE);
+    gtk_widget_set_sensitive(thoughtsEntry, TRUE);
     
-    // Also keep Enter key support for users who expect it
+    // Connect signals for real-time updates
+    g_signal_connect(thoughtsEntry, "changed", G_CALLBACK(onThoughtsChanged), this);
     g_signal_connect(thoughtsEntry, "activate", G_CALLBACK(onThoughtsChanged), this);
+    
+    // Add click handler to ensure focus
+    g_signal_connect(thoughtsEntry, "button-press-event", G_CALLBACK(onEntryClicked), this);
     
     gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsTitle, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsEntry, FALSE, FALSE, 0);
@@ -383,4 +400,11 @@ void onAutoStartToggled(GtkWidget* widget, gpointer userData) {  // ← Remove '
             std::cout << "Auto-start enabled" << std::endl;
         }
     }
+}
+
+// Add this new callback function
+gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userData) {
+    // Force focus to the entry when clicked
+    gtk_widget_grab_focus(widget);
+    return FALSE; // Let other handlers process the event too
 }

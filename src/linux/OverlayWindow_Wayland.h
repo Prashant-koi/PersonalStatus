@@ -81,6 +81,7 @@ private:
 void onStatusToggled(GtkWidget* widget, gpointer userData);
 void onThoughtsChanged(GtkWidget* widget, gpointer userData);
 void onAutoStartToggled(GtkWidget* widget, gpointer userData);
+gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userData);  // ← Add this
 
 #endif // __linux__
 #endif // OVERLAY_WINDOW_WAYLAND_H

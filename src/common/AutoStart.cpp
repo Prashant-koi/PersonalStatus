@@ -56,7 +56,7 @@ bool AutoStart::enable(const std::string& executablePath) {
     file << "Type=Application\n";
     file << "Name=Personal Status Monitor\n";
     file << "Comment=Desktop status widget for portfolio integration\n";
-    file << "Exec=" << executablePath << "\n";
+    file << "Exec=" << executablePath << " --minimized\n";  // ← Start minimized to tray
     file << "Icon=applications-system\n";
     file << "Terminal=false\n";
     file << "Hidden=false\n";
