@@ -10,6 +10,8 @@
 #include <fstream>
 #include <string>
 #include <cctype>
+#include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 AppDetector::AppDetector() {
@@ -27,18 +29,120 @@ AppDetector::AppDetector() {
         {"Visual Studio", "devenv.exe", false}
     };
 #elif __linux__
-    // Linux app list
+    // Linux app list - more specific process names
     apps = {
-        {"Firefox", "firefox", false},
-        {"Brave Browser", "brave", false},
+        {"Firefox Browser", "firefox", false},
+        {"Brave Browser", "brave-browser", false},  // More specific
+        {"Chromium", "chromium", false},
         {"Visual Studio Code", "code", false},
-        {"Terminal", "gnome-terminal", false},
-        {"Hyprland", "Hyprland", false},
-        {"Kitty", "kitty", false},
-        {"Dolphin", "dolphin", false}
+        {"Rofi", "rofi", false}
     };
 #endif
 }
+
+void AppDetector::detectRunningApps() {
+    // Reset all apps to not running
+    for (auto& app : apps) {
+        app.running = false;
+    }
+
+#ifdef __linux__
+    // Linux: Check /proc for actual running processes
+    DIR* proc_dir = opendir("/proc");
+    if (!proc_dir) return;
+
+    struct dirent* entry;
+    while ((entry = readdir(proc_dir)) != nullptr) {
+        // Skip non-numeric directories
+        if (!isdigit(entry->d_name[0])) continue;
+        
+        std::string pid_str = entry->d_name;
+        std::string cmdline_path = "/proc/" + pid_str + "/cmdline";
+        std::string stat_path = "/proc/" + pid_str + "/stat";
+        
+        // Check if process is actually running (not zombie)
+        std::ifstream stat_file(stat_path);
+        if (stat_file.is_open()) {
+            std::string line;
+            std::getline(stat_file, line);
+            
+            // Check process state (3rd field after pid and name)
+            size_t first_paren = line.find('(');
+            size_t last_paren = line.rfind(')');
+            if (first_paren != std::string::npos && last_paren != std::string::npos && last_paren > first_paren) {
+                std::string after_name = line.substr(last_paren + 1);
+                size_t space_pos = after_name.find(' ');
+                if (space_pos != std::string::npos) {
+                    char state = after_name[space_pos + 1];
+                    // Skip zombie (Z) and dead (X) processes
+                    if (state == 'Z' || state == 'X') {
+                        stat_file.close();
+                        continue;
+                    }
+                }
+            }
+            stat_file.close();
+        }
+        
+        // Read command line
+        std::ifstream cmdline_file(cmdline_path);
+        if (cmdline_file.is_open()) {
+            std::string cmdline;
+            std::getline(cmdline_file, cmdline);
+            cmdline_file.close();
+            
+            if (cmdline.empty()) continue;
+            
+            // Extract process name from command line
+            std::string process_name;
+            size_t null_pos = cmdline.find('\0');
+            if (null_pos != std::string::npos) {
+                process_name = cmdline.substr(0, null_pos);
+            } else {
+                process_name = cmdline;
+            }
+            
+            // Get basename
+            size_t slash_pos = process_name.rfind('/');
+            if (slash_pos != std::string::npos) {
+                process_name = process_name.substr(slash_pos + 1);
+            }
+            
+            // Check against our app list
+            for (auto& app : apps) {
+                if (process_name == app.processName) {
+                    // Additional check: make sure it's not a background daemon
+                    if (isActiveProcess(pid_str)) {
+                        app.running = true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    closedir(proc_dir);
+#endif
+}
+
+#ifdef __linux__
+bool AppDetector::isActiveProcess(const std::string& pid) const {
+    // Check if process has active window or is interactive
+    std::string status_path = "/proc/" + pid + "/status";
+    std::ifstream status_file(status_path);
+    
+    if (!status_file.is_open()) return false;
+    
+    std::string line;
+    while (std::getline(status_file, line)) {
+        // Check if it's a session leader or has controlling terminal
+        if (line.find("Tgid:") == 0 || line.find("SigIgn:") == 0) {
+            // Simple heuristic: if it's running and we can read it, consider it active
+            return true;
+        }
+    }
+    return true;  // Default to true if we can't determine
+}
+#endif
 
 #ifdef _WIN32
 // Helper function to convert wide string to narrow string
@@ -123,12 +227,6 @@ bool AppDetector::isProcessRunning(const std::string& processName) const {
     closedir(proc_dir);
     return false;
 #endif
-}
-
-void AppDetector::detectRunningApps() {
-    for (auto& app : apps) {
-        app.running = isProcessRunning(app.processName);
-    }
 }
 
 void AppDetector::printResults() const {

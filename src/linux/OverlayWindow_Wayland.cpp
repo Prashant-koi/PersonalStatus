@@ -1,4 +1,6 @@
 #include "OverlayWindow_Wayland.h"
+#include "../common/AutoStart.h"
+#include "../common/ThoughtsManager.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -7,10 +9,11 @@
 OverlayWindow_Wayland::OverlayWindow_Wayland()
     : window(nullptr)
     , mainBox(nullptr)
-    , thoughtsLabel(nullptr)
+    , thoughtsEntry(nullptr)
     , statusLabel(nullptr)
     , appsLabel(nullptr)
     , updateTimerId(0)
+    , thoughtsDebounceTimerId(0)  // ← Add this
     , thoughtsManager(nullptr)
     , isVisible(false)
     , shouldExit(false)
@@ -25,8 +28,12 @@ OverlayWindow_Wayland::~OverlayWindow_Wayland() {
         g_source_remove(updateTimerId);
     }
     
+    if (thoughtsDebounceTimerId > 0) {  // ← Add this
+        g_source_remove(thoughtsDebounceTimerId);
+    }
+    
     if (window) {
-        gtk_widget_destroy(window);  // GTK 3 API
+        gtk_widget_destroy(window);
     }
 }
 
@@ -60,31 +67,72 @@ void OverlayWindow_Wayland::setupLayerShell() {
 void OverlayWindow_Wayland::createWidgets() {
     std::cout << "Creating widgets..." << std::endl;
     
-    // GTK 3 API
+    // Main container
     mainBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_set_margin_left(mainBox, 15);    // GTK 3 API
-    gtk_widget_set_margin_right(mainBox, 15);   // GTK 3 API
-    gtk_widget_set_margin_top(mainBox, 15);     // GTK 3 API
-    gtk_widget_set_margin_bottom(mainBox, 15);  // GTK 3 API
+    gtk_widget_set_margin_start(mainBox, 15);
+    gtk_widget_set_margin_end(mainBox, 15);
+    gtk_widget_set_margin_top(mainBox, 15);
+    gtk_widget_set_margin_bottom(mainBox, 15);
     
-    thoughtsLabel = gtk_label_new("Thoughts: Loading...");
-    gtk_label_set_line_wrap(GTK_LABEL(thoughtsLabel), TRUE);  // GTK 3 API
-    gtk_label_set_max_width_chars(GTK_LABEL(thoughtsLabel), 40);
-    gtk_widget_set_halign(thoughtsLabel, GTK_ALIGN_START);
+    // Title/Status section
+    GtkWidget* titleBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     
-    statusLabel = gtk_label_new("Status: Unknown");
+    // Status indicator
+    statusLabel = gtk_label_new("🟢 Available");
     gtk_widget_set_halign(statusLabel, GTK_ALIGN_START);
     
-    appsLabel = gtk_label_new("Apps: None");
+    // Status toggle button
+    GtkWidget* statusToggle = gtk_button_new_with_label("Toggle Status");
+    g_signal_connect(statusToggle, "clicked", G_CALLBACK(onStatusToggled), this);
+    
+    gtk_box_pack_start(GTK_BOX(titleBox), statusLabel, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(titleBox), statusToggle, FALSE, FALSE, 0);
+    
+    // Thoughts section
+    GtkWidget* thoughtsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    
+    GtkWidget* thoughtsTitle = gtk_label_new("💭 Your Thoughts (type to update):");
+    gtk_widget_set_halign(thoughtsTitle, GTK_ALIGN_START);
+    
+    // Thoughts entry with REAL-TIME updates
+    thoughtsEntry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(thoughtsEntry), "What are you working on?");
+    
+    // Connect to REAL-TIME text changes (no Enter key needed!)
+    g_signal_connect(thoughtsEntry, "changed", G_CALLBACK(onThoughtsChanged), this);
+    
+    // Also keep Enter key support for users who expect it
+    g_signal_connect(thoughtsEntry, "activate", G_CALLBACK(onThoughtsChanged), this);
+    
+    gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsTitle, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsEntry, FALSE, FALSE, 0);
+    
+    // Apps section
+    appsLabel = gtk_label_new("📱 Apps: Detecting...");
     gtk_label_set_line_wrap(GTK_LABEL(appsLabel), TRUE);
     gtk_widget_set_halign(appsLabel, GTK_ALIGN_START);
     
-    // GTK 3 API - use gtk_box_pack_start
-    gtk_box_pack_start(GTK_BOX(mainBox), thoughtsLabel, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(mainBox), statusLabel, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(mainBox), appsLabel, FALSE, FALSE, 0);
+    // Auto-start section
+    GtkWidget* autostartBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    GtkWidget* autostartLabel = gtk_label_new("🚀 Auto-start:");
+    GtkWidget* autostartToggle = gtk_button_new_with_label("Enable");
     
-    // GTK 3 API - use gtk_container_add
+    // Check current auto-start status
+    if (AutoStart::isEnabled()) {
+        gtk_button_set_label(GTK_BUTTON(autostartToggle), "Disable");
+    }
+    
+    g_signal_connect(autostartToggle, "clicked", G_CALLBACK(onAutoStartToggled), this);
+    
+    gtk_box_pack_start(GTK_BOX(autostartBox), autostartLabel, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(autostartBox), autostartToggle, FALSE, FALSE, 0);
+    
+    // Pack everything
+    gtk_box_pack_start(GTK_BOX(mainBox), titleBox, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mainBox), thoughtsBox, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mainBox), appsLabel, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mainBox), autostartBox, FALSE, FALSE, 0);
+    
     gtk_container_add(GTK_CONTAINER(window), mainBox);
     
     std::cout << "Widgets created successfully" << std::endl;
@@ -105,6 +153,28 @@ void OverlayWindow_Wayland::applyStyles() {
         "    color: white;"
         "    font-family: 'DejaVu Sans', sans-serif;"
         "    font-size: 12pt;"
+        "}"
+        "entry {"
+        "    background-color: rgba(50, 50, 50, 0.8);"
+        "    color: white;"
+        "    border: 1px solid rgba(100, 100, 100, 0.5);"
+        "    border-radius: 4px;"
+        "    padding: 5px;"
+        "}"
+        "button {"
+        "    background: linear-gradient(135deg, rgba(70, 70, 70, 0.9), rgba(50, 50, 50, 0.9));"
+        "    color: white;"
+        "    border: 1px solid rgba(100, 100, 100, 0.6);"
+        "    border-radius: 4px;"
+        "    padding: 8px 16px;"
+        "    font-weight: bold;"
+        "}"
+        "button:hover {"
+        "    background: linear-gradient(135deg, rgba(90, 90, 90, 0.9), rgba(70, 70, 70, 0.9));"
+        "    border-color: rgba(120, 120, 120, 0.8);"
+        "}"
+        "button:active {"
+        "    background: linear-gradient(135deg, rgba(40, 40, 40, 0.9), rgba(30, 30, 30, 0.9));"
         "}"
         "box {"
         "    background-color: transparent;"
@@ -198,16 +268,8 @@ void OverlayWindow_Wayland::setThoughtsManager(ThoughtsManager* mgr) {
 void OverlayWindow_Wayland::updateDisplay() {
     if (!thoughtsManager || !window) return;
     
-    // Update thoughts
-    std::string thoughts = formatThoughts(thoughtsManager->getCurrentThoughts());
-    gtk_label_set_text(GTK_LABEL(thoughtsLabel), thoughts.c_str());
-    
-    // Update status
-    std::string status = formatStatus(thoughtsManager->isBusy());
-    gtk_label_set_text(GTK_LABEL(statusLabel), status.c_str());
-    
-    // Update apps (placeholder)
-    std::vector<std::string> apps;
+    // Update apps only (thoughts are handled by the entry field)
+    std::vector<std::string> apps;  // This should be populated by AppDetector
     std::string appsText = formatApps(apps);
     gtk_label_set_text(GTK_LABEL(appsLabel), appsText.c_str());
 }
@@ -230,17 +292,13 @@ void OverlayWindow_Wayland::onWindowDestroy(GtkWidget* widget, gpointer userData
     self->window = nullptr;
 }
 
-std::string OverlayWindow_Wayland::formatThoughts(const std::string& thoughts) {
-    return "💭 " + (thoughts.empty() ? "No current thoughts" : thoughts);
-}
-
 std::string OverlayWindow_Wayland::formatStatus(bool busy) {
     return busy ? "🔴 Status: Busy" : "🟢 Status: Available";
 }
 
 std::string OverlayWindow_Wayland::formatApps(const std::vector<std::string>& apps) {
     if (apps.empty()) {
-        return "📱 Apps: No active applications";
+        return "📱 Apps: No active applications detected";
     }
     
     std::ostringstream oss;
@@ -256,4 +314,73 @@ std::string OverlayWindow_Wayland::formatApps(const std::vector<std::string>& ap
     }
     
     return oss.str();
+}
+
+// Remove 'static' keyword from callback functions - they're declared in header
+void onStatusToggled(GtkWidget* widget, gpointer userData) {
+    auto* self = static_cast<OverlayWindow_Wayland*>(userData);
+    if (!self->thoughtsManager) return;
+    
+    bool currentBusy = self->thoughtsManager->isBusy();
+    self->thoughtsManager->setBusyStatus(!currentBusy);
+    
+    // Update status label
+    if (!currentBusy) {
+        gtk_label_set_text(GTK_LABEL(self->statusLabel), "🔴 Busy");
+        gtk_button_set_label(GTK_BUTTON(widget), "Set Available");
+    } else {
+        gtk_label_set_text(GTK_LABEL(self->statusLabel), "🟢 Available");
+        gtk_button_set_label(GTK_BUTTON(widget), "Set Busy");
+    }
+    
+    std::cout << "Status toggled to: " << (!currentBusy ? "Busy" : "Available") << std::endl;
+}
+
+// Updated callback with debouncing
+void onThoughtsChanged(GtkWidget* widget, gpointer userData) {
+    auto* self = static_cast<OverlayWindow_Wayland*>(userData);
+    if (!self->thoughtsManager) return;
+    
+    // Cancel previous debounce timer
+    if (self->thoughtsDebounceTimerId > 0) {
+        g_source_remove(self->thoughtsDebounceTimerId);
+    }
+    
+    // Set new debounce timer (500ms delay) - FIX: Use class scope
+    self->thoughtsDebounceTimerId = g_timeout_add(500, OverlayWindow_Wayland::onThoughtsDebounced, userData);
+}
+
+gboolean OverlayWindow_Wayland::onThoughtsDebounced(gpointer userData) {
+    auto* self = static_cast<OverlayWindow_Wayland*>(userData);
+    if (!self->thoughtsManager || !self->thoughtsEntry) return FALSE;
+    
+    // Get current text from entry
+    const char* text = gtk_entry_get_text(GTK_ENTRY(self->thoughtsEntry));
+    std::string thoughtsText = text ? std::string(text) : "";
+    
+    // Update thoughts manager
+    self->thoughtsManager->setCurrentThoughts(thoughtsText);
+    
+    std::cout << "[THOUGHTS] Debounced update: '" << thoughtsText << "'" << std::endl;
+    
+    // Reset timer ID
+    self->thoughtsDebounceTimerId = 0;
+    return FALSE; // Don't repeat
+}
+
+void onAutoStartToggled(GtkWidget* widget, gpointer userData) {  // ← Remove 'static'
+    bool isEnabled = AutoStart::isEnabled();
+    
+    if (isEnabled) {
+        if (AutoStart::disable()) {
+            gtk_button_set_label(GTK_BUTTON(widget), "Enable");
+            std::cout << "Auto-start disabled" << std::endl;
+        }
+    } else {
+        std::string execPath = AutoStart::getExecutablePath();
+        if (AutoStart::enable(execPath)) {
+            gtk_button_set_label(GTK_BUTTON(widget), "Disable");
+            std::cout << "Auto-start enabled" << std::endl;
+        }
+    }
 }

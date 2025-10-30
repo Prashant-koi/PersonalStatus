@@ -15,6 +15,7 @@ set(COMMON_SOURCES
     src/common/OverlayWindow.cpp
     src/common/SystemTray.cpp
     src/common/SettingsManager.cpp
+    src/common/AutoStart.cpp  # ← Add this
 )
 
 # Platform detection

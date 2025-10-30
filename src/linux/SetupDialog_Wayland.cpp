@@ -58,10 +58,11 @@ bool SetupDialog_Wayland::showSetupDialog(std::string& apiUrl, std::string& apiK
     
     // Create main box
     GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_set_margin_left(vbox, 20);    // GTK 3 API
-    gtk_widget_set_margin_right(vbox, 20);   // GTK 3 API
-    gtk_widget_set_margin_top(vbox, 20);     // GTK 3 API
-    gtk_widget_set_margin_bottom(vbox, 20);  // GTK 3 API
+    // Use newer margin functions
+    gtk_widget_set_margin_start(vbox, 20);   // ← Updated
+    gtk_widget_set_margin_end(vbox, 20);     // ← Updated
+    gtk_widget_set_margin_top(vbox, 20);     // ← This one is fine
+    gtk_widget_set_margin_bottom(vbox, 20);  // ← This one is fine
     
     // Title
     GtkWidget* title = gtk_label_new("Personal Status Monitor Setup");

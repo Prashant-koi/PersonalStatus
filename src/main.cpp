@@ -27,6 +27,7 @@
 #include "common/config.h"
 #include "common/SystemTray.h"
 #include "common/SettingsManager.h"
+#include "common/AutoStart.h"  // Add this include
 
 std::atomic<bool> g_shouldExit(false);
 
@@ -208,12 +209,24 @@ int main(int argc, char* argv[]) {
 #ifdef __linux__
     // Initialize GTK3 and curl on Linux
     std::cout << "Initializing GTK3..." << std::endl;
-    if (!gtk_init_check(&argc, &argv)) {
-        std::cerr << "Failed to initialize GTK3!" << std::endl;
-        return 1;
-    }
+    gtk_init(&argc, &argv);
     curl_global_init(CURL_GLOBAL_DEFAULT);
     std::cout << "GTK3 and curl initialized" << std::endl;
+    
+    // Check for --background flag
+    bool runInBackground = false;
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]) == "--background") {
+            runInBackground = true;
+            break;
+        }
+    }
+    
+    // If auto-start is enabled and no explicit window request, run minimized
+    if (AutoStart::isEnabled() && !runInBackground) {
+        std::cout << "Auto-start detected, running minimized..." << std::endl;
+        runInBackground = true;
+    }
 #endif
 
     // Setup signal handlers
@@ -273,18 +286,27 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
-        std::cout << "Creating overlay window..." << std::endl;
+        // Create overlay window
         std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
+        overlay->setThoughtsManager(&thoughtsManager);
+        
         if (!overlay->create()) {
             std::cerr << "Failed to create overlay window" << std::endl;
             return 1;
         }
         
-        overlay->setThoughtsManager(&thoughtsManager);
-        overlay->show();
-        
-        // Setup tray callbacks
+        // Show window only if not running in background
+#ifdef __linux__
+        bool windowVisible = !runInBackground;
+        if (!runInBackground) {
+            overlay->show();
+        }
+#else
         bool windowVisible = true;
+        overlay->show();
+#endif
+
+        // Setup tray callbacks
         tray->onMenuItemClicked = [&](int id) {
             switch(id) {
                 case 1: // Show Window
@@ -301,43 +323,85 @@ int main(int argc, char* argv[]) {
             }
         };
         
-        // Start API push thread
+        // Smart API update thread with change detection
         std::thread apiThread([&]() {
+            std::string lastThoughts = "";
+            bool lastBusyStatus = false;
+            std::vector<std::string> lastActiveApps;
+            auto lastUpdateTime = std::chrono::steady_clock::now();
+            
+            const int FORCED_UPDATE_SECONDS = 30;  // Force update every 30 seconds
+            const int QUICK_UPDATE_SECONDS = 5;    // Quick update after changes
+            
             while (!g_shouldExit) {
                 detector.detectRunningApps();
                 auto runningApps = detector.getRunningApps();
                 
                 std::vector<std::string> activeApps;
                 for (const auto& app : runningApps) {
-                    if (activeApps.size() < 2) {
+                    if (app.running && activeApps.size() < 2) {
                         activeApps.push_back(app.name);
                     }
                 }
                 
-                std::ostringstream json;
-                json << "{";
-                json << "\"timestamp\":" << std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count() << ",";
-                json << "\"thoughts\":\"" << thoughtsManager.getCurrentThoughts() << "\",";
-                json << "\"activeApps\":[";
+                // Get current state
+                std::string currentThoughts = thoughtsManager.getCurrentThoughts();
+                bool currentBusy = thoughtsManager.isBusy();
+                auto now = std::chrono::steady_clock::now();
                 
-                for (size_t i = 0; i < activeApps.size(); ++i) {
-                    json << "\"" << activeApps[i] << "\"";
-                    if (i < activeApps.size() - 1) json << ",";
-                }
+                // Check if anything has changed
+                bool thoughtsChanged = (currentThoughts != lastThoughts);
+                bool statusChanged = (currentBusy != lastBusyStatus);
+                bool appsChanged = (activeApps != lastActiveApps);
+                bool forceUpdate = (std::chrono::duration_cast<std::chrono::seconds>(now - lastUpdateTime).count() >= FORCED_UPDATE_SECONDS);
                 
-                json << "],";
-                json << "\"busy\":" << (thoughtsManager.isBusy() ? "true" : "false");
-                json << "}";
-                
-                if (sendToVercelAPI(json.str(), VERCEL_API_URL, API_KEY)) {
-                    std::cout << "[API] ✓ Data sent successfully" << std::endl;
+                // Only send if something changed OR it's time for forced update
+                if (thoughtsChanged || statusChanged || appsChanged || forceUpdate) {
+                    
+                    std::ostringstream json;
+                    json << "{";
+                    json << "\"timestamp\":" << std::chrono::duration_cast<std::chrono::seconds>(
+                        std::chrono::system_clock::now().time_since_epoch()).count() << ",";
+                    json << "\"thoughts\":\"" << currentThoughts << "\",";
+                    json << "\"activeApps\":[";
+                    
+                    for (size_t i = 0; i < activeApps.size(); ++i) {
+                        json << "\"" << activeApps[i] << "\"";
+                        if (i < activeApps.size() - 1) json << ",";
+                    }
+                    
+                    json << "],";
+                    json << "\"busy\":" << (currentBusy ? "true" : "false");
+                    json << "}";
+                    
+                    std::string jsonStr = json.str();
+                    
+                    // Show what changed
+                    std::string changeReason = "";
+                    if (thoughtsChanged) changeReason += "thoughts ";
+                    if (statusChanged) changeReason += "status ";
+                    if (appsChanged) changeReason += "apps ";
+                    if (forceUpdate && changeReason.empty()) changeReason = "periodic ";
+                    
+                    std::cout << "[API] Sending update (" << changeReason << "trim): " << jsonStr << std::endl;
+                    
+                    if (sendToVercelAPI(jsonStr, VERCEL_API_URL, API_KEY)) {
+                        std::cout << "[API] ✓ Data sent successfully" << std::endl;
+                        
+                        // Update last known state
+                        lastThoughts = currentThoughts;
+                        lastBusyStatus = currentBusy;
+                        lastActiveApps = activeApps;
+                        lastUpdateTime = now;
+                    } else {
+                        std::cout << "[API] ✗ Failed to send data" << std::endl;
+                    }
+                    
+                    // Quick sleep after sending update
+                    std::this_thread::sleep_for(std::chrono::seconds(QUICK_UPDATE_SECONDS));
                 } else {
-                    std::cout << "[API] ✗ Failed to send data" << std::endl;
-                }
-                
-                for (int i = 0; i < 20 && !g_shouldExit; ++i) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    // No changes - check again in 1 second
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
             }
         });

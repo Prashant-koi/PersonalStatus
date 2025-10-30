@@ -5,6 +5,7 @@
 
 #include "../common/OverlayWindow.h"
 #include "../common/ThoughtsManager.h"
+#include "../common/AutoStart.h"
 #include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
 #include <string>
@@ -27,16 +28,19 @@ public:
     void messageLoop() override;
     void setThoughtsManager(ThoughtsManager* mgr) override;
 
-private:
+protected:
     // GTK window components
     GtkWidget* window;
     GtkWidget* mainBox;
-    GtkWidget* thoughtsLabel;
+    GtkWidget* thoughtsEntry;     // ← ADD this missing member
     GtkWidget* statusLabel;
     GtkWidget* appsLabel;
     
     // Update timer
     guint updateTimerId;
+    
+    // Debouncing for thoughts updates
+    guint thoughtsDebounceTimerId;
     
     // Manager reference
     ThoughtsManager* thoughtsManager;
@@ -44,7 +48,8 @@ private:
     // Window state
     std::atomic<bool> isVisible;
     std::atomic<bool> shouldExit;
-    
+
+private:
     // GTK initialization
     bool initializeGtk();
     void setupLayerShell();
@@ -60,10 +65,22 @@ private:
     static void onWindowDestroy(GtkWidget* widget, gpointer userData);
     
     // Helper methods
-    std::string formatThoughts(const std::string& thoughts);
     std::string formatStatus(bool busy);
     std::string formatApps(const std::vector<std::string>& apps);
+    
+    // Debouncing helper
+    static gboolean onThoughtsDebounced(gpointer userData);
+    
+    // Friend functions for callbacks
+    friend void onStatusToggled(GtkWidget* widget, gpointer userData);
+    friend void onThoughtsChanged(GtkWidget* widget, gpointer userData);
+    friend void onAutoStartToggled(GtkWidget* widget, gpointer userData);
 };
+
+// Declare callback functions outside the class
+void onStatusToggled(GtkWidget* widget, gpointer userData);
+void onThoughtsChanged(GtkWidget* widget, gpointer userData);
+void onAutoStartToggled(GtkWidget* widget, gpointer userData);
 
 #endif // __linux__
 #endif // OVERLAY_WINDOW_WAYLAND_H
