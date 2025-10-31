@@ -19,7 +19,6 @@ OverlayWindow_Wayland::OverlayWindow_Wayland()
     , statusLabel(nullptr)
     , appsLabel(nullptr)
     , updateTimerId(0)
-    , thoughtsDebounceTimerId(0)  // ← Add this
     , thoughtsManager(nullptr)
     , isVisible(false)
     , shouldExit(false)
@@ -32,10 +31,6 @@ OverlayWindow_Wayland::~OverlayWindow_Wayland() {
     
     if (updateTimerId > 0) {
         g_source_remove(updateTimerId);
-    }
-    
-    if (thoughtsDebounceTimerId > 0) {  // ← Add this
-        g_source_remove(thoughtsDebounceTimerId);
     }
     
     if (window) {
@@ -387,37 +382,22 @@ void onStatusToggled(GtkWidget* widget, gpointer userData) {
     std::cout << "Status toggled to: " << (!currentBusy ? "Busy" : "Available") << std::endl;
 }
 
-// Updated callback with debouncing
+// Updated callback - immediate updates like Windows version
 void onThoughtsChanged(GtkWidget* widget, gpointer userData) {
     auto* self = static_cast<OverlayWindow_Wayland*>(userData);
     if (!self->thoughtsManager) return;
     
-    // Cancel previous debounce timer
-    if (self->thoughtsDebounceTimerId > 0) {
-        g_source_remove(self->thoughtsDebounceTimerId);
-    }
-    
-    // Set new debounce timer (500ms delay) - FIX: Use class scope
-    self->thoughtsDebounceTimerId = g_timeout_add(500, OverlayWindow_Wayland::onThoughtsDebounced, userData);
-}
-
-gboolean OverlayWindow_Wayland::onThoughtsDebounced(gpointer userData) {
-    auto* self = static_cast<OverlayWindow_Wayland*>(userData);
-    if (!self->thoughtsManager || !self->thoughtsEntry) return FALSE;
-    
-    // Get current text from entry
-    const char* text = gtk_entry_get_text(GTK_ENTRY(self->thoughtsEntry));
+    // Get current text from entry and update immediately (like Windows)
+    const char* text = gtk_entry_get_text(GTK_ENTRY(widget));
     std::string thoughtsText = text ? std::string(text) : "";
     
-    // Update thoughts manager
+    // Update thoughts manager immediately - no debouncing
     self->thoughtsManager->setCurrentThoughts(thoughtsText);
     
-    std::cout << "[THOUGHTS] Debounced update: '" << thoughtsText << "'" << std::endl;
-    
-    // Reset timer ID
-    self->thoughtsDebounceTimerId = 0;
-    return FALSE; // Don't repeat
+    std::cout << "[THOUGHTS] Immediate update: '" << thoughtsText << "'" << std::endl;
 }
+
+// Remove the onThoughtsDebounced function entirely - we don't need it anymore
 
 void onAutoStartToggled(GtkWidget* widget, gpointer userData) {  // ← Remove 'static'
     bool isEnabled = AutoStart::isEnabled();
