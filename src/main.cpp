@@ -344,8 +344,8 @@ int main(int argc, char* argv[]) {
             std::vector<std::string> lastActiveApps;
             auto lastUpdateTime = std::chrono::steady_clock::now();
             
-            const int FORCED_UPDATE_SECONDS = 30;
-            const int QUICK_UPDATE_SECONDS = 5;
+            const int FORCED_UPDATE_SECONDS = 15;  // ← Reduce from 30 to 15 seconds
+            const int QUICK_UPDATE_SECONDS = 1;    // ← Reduce from 5 to 1 second
             
             while (!g_shouldExit) {
                 detector.detectRunningApps();
@@ -414,8 +414,8 @@ int main(int argc, char* argv[]) {
                     // Quick sleep after sending update
                     std::this_thread::sleep_for(std::chrono::seconds(QUICK_UPDATE_SECONDS));
                 } else {
-                    // No changes - check again in 1 second
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    // No changes - check again in 0.2 seconds (very fast polling)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));  // ← Much faster polling
                 }
             }
         });

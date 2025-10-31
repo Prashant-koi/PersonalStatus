@@ -38,21 +38,12 @@ public:
     // Update timer
     guint updateTimerId;
     
-    // Debouncing for thoughts updates
-    guint thoughtsDebounceTimerId;
-    
     // Manager reference
     ThoughtsManager* thoughtsManager;
     
     // Window state (public for callback access)
     std::atomic<bool> isVisible;
     std::atomic<bool> shouldExit;
-
-    // Debouncing helper (move to public for callback access)
-    static gboolean onThoughtsDebounced(gpointer userData);
-
-protected:
-    // Remove onThoughtsDebounced from here - it's now in public section above
 
 private:
     // GTK initialization
@@ -79,7 +70,6 @@ void onStatusToggled(GtkWidget* widget, gpointer userData);
 void onThoughtsChanged(GtkWidget* widget, gpointer userData);
 void onAutoStartToggled(GtkWidget* widget, gpointer userData);
 void onCloseClicked(GtkWidget* widget, gpointer userData);
-gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userData);
 
 #endif // __linux__
 #endif // OVERLAY_WINDOW_WAYLAND_H
