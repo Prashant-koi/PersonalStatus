@@ -32,7 +32,7 @@ AppDetector::AppDetector() {
     // Linux app list - more specific process names
     apps = {
         {"Firefox Browser", "firefox", false},
-        {"Brave Browser", "brave-browser", false},  // More specific
+        {"Brave Browser", "brave", false},  // More specific
         {"Chromium", "chromium", false},
         {"Visual Studio Code", "code", false},
         {"Rofi", "rofi", false}

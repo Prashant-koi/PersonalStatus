@@ -7,13 +7,6 @@
 #include <atomic>
 #include <csignal>
 
-#ifdef _WIN32
-#include <windows.h>
-#include <winhttp.h>
-#pragma comment(lib, "winhttp.lib")
-#include "windows/SetupDialog_Win32.h"
-#endif
-
 #ifdef __linux__
 #include <gtk/gtk.h>
 #include <curl/curl.h>
@@ -27,13 +20,19 @@
 #include "common/config.h"
 #include "common/SystemTray.h"
 #include "common/SettingsManager.h"
-#include "common/AutoStart.h"  // Add this include
+#include "common/AutoStart.h"
 
 std::atomic<bool> g_shouldExit(false);
+std::atomic<bool> g_toggleWidget(false);  // ← Add this for widget toggle
 
 void signalHandler(int signal) {
-    std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
-    g_shouldExit = true;
+    if (signal == SIGINT || signal == SIGTERM) {
+        std::cout << "Received signal " << signal << ", shutting down..." << std::endl;
+        g_shouldExit = true;
+    } else if (signal == SIGUSR1) {
+        std::cout << "Received SIGUSR1, toggling widget visibility..." << std::endl;
+        g_toggleWidget = true;  // ← Toggle widget instead of exit
+    }
 }
 
 #ifdef __linux__
@@ -204,56 +203,59 @@ bool sendToVercelAPI(const std::string& jsonData, const std::string& apiUrl, con
 #endif
 
 int main(int argc, char* argv[]) {
-    std::cout << "Personal Status Monitor - Starting..." << std::endl;
+    bool showGui = true;
+    
+    // Parse command line arguments
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]) == "--minimized") {
+            showGui = false;  // Start minimized to tray
+        } else if (std::string(argv[i]) == "--help") {
+            std::cout << "Personal Status Monitor\n";
+            std::cout << "Usage: " << argv[0] << " [options]\n";
+            std::cout << "Options:\n";
+            std::cout << "  --minimized Start minimized to system tray\n";
+            std::cout << "  --help      Show this help message\n";
+            return 0;
+        }
+    }
 
 #ifdef __linux__
-    // Initialize GTK3 and curl on Linux
-    std::cout << "Initializing GTK3..." << std::endl;
+    std::cout << "Personal Status Monitor - Starting..." << std::endl;
     gtk_init(&argc, &argv);
     curl_global_init(CURL_GLOBAL_DEFAULT);
     std::cout << "GTK3 and curl initialized" << std::endl;
-    
-    // Check for --background flag
-    bool runInBackground = false;
-    for (int i = 1; i < argc; i++) {
-        if (std::string(argv[i]) == "--background") {
-            runInBackground = true;
-            break;
-        }
-    }
-    
-    // If auto-start is enabled and no explicit window request, run minimized
-    if (AutoStart::isEnabled() && !runInBackground) {
-        std::cout << "Auto-start detected, running minimized..." << std::endl;
-        runInBackground = true;
-    }
 #endif
 
     // Setup signal handlers
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
+    std::signal(SIGUSR1, signalHandler);  // ← Add hotkey signal handler
+
+    // Setup application
+    std::cout << "Personal Status Monitor - Desktop Widget" << std::endl;
+    std::cout << "=======================================" << std::endl;
     
-    std::cout << "Personal Status Monitor - Desktop Widget (Hyprland/Wayland Edition)" << std::endl;
-    std::cout << "=================================================================" << std::endl;
+    // Get API configuration
+    std::string VERCEL_API_URL;
+    std::string API_KEY;
     
-    std::string VERCEL_API_URL, API_KEY;
-    
-    // Check for existing settings
     if (!SettingsManager::hasValidSettings()) {
-        std::cout << "First time setup required..." << std::endl;
+        std::cout << "No settings found, showing setup dialog..." << std::endl;
         
-#ifdef _WIN32
-        if (!SetupDialog_Win32::showSetupDialog(VERCEL_API_URL, API_KEY, true)) {
-#elif __linux__
+#ifdef __linux__
         if (!SetupDialog_Wayland::showSetupDialog(VERCEL_API_URL, API_KEY)) {
-#endif
-            std::cout << "Setup cancelled. Exiting..." << std::endl;
-            return 0;
+            std::cerr << "Setup cancelled by user" << std::endl;
+            return 1;
         }
+#endif
+#ifdef _WIN32
+        if (!SetupDialog_Win32::showSetupDialog(VERCEL_API_URL, API_KEY)) {
+            std::cerr << "Setup cancelled by user" << std::endl;
+            return 1;
+        }
+#endif
         
-        if (SettingsManager::saveSettings(VERCEL_API_URL, API_KEY)) {
-            std::cout << "Settings saved successfully!" << std::endl;
-        } else {
+        if (!SettingsManager::saveSettings(VERCEL_API_URL, API_KEY)) {
             std::cerr << "Failed to save settings!" << std::endl;
             return 1;
         }
@@ -286,6 +288,14 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
+        // Add tray menu items
+        tray->addMenuItem("📱 Show Status Widget", 1);
+        tray->addMenuItem("🫥 Hide Status Widget", 2);
+        tray->addSeparator();
+        tray->addMenuItem("⚙️ Toggle Widget (Hotkey: SIGUSR1)", 3);  // ← Add toggle option
+        tray->addSeparator();
+        tray->addMenuItem("❌ Exit Application", 99);
+        
         // Create overlay window
         std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
         overlay->setThoughtsManager(&thoughtsManager);
@@ -295,16 +305,14 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
-        // Show window only if not running in background
-#ifdef __linux__
-        bool windowVisible = !runInBackground;
-        if (!runInBackground) {
+        // Show/hide window based on startup mode
+        bool windowVisible = showGui;
+        if (windowVisible) {
             overlay->show();
+            std::cout << "Overlay window visible" << std::endl;
+        } else {
+            std::cout << "Started minimized to tray" << std::endl;
         }
-#else
-        bool windowVisible = true;
-        overlay->show();
-#endif
 
         // Setup tray callbacks
         tray->onMenuItemClicked = [&](int id) {
@@ -312,26 +320,32 @@ int main(int argc, char* argv[]) {
                 case 1: // Show Window
                     overlay->show();
                     windowVisible = true;
+                    std::cout << "Showing overlay window" << std::endl;
                     break;
                 case 2: // Hide Window
                     overlay->hide();
                     windowVisible = false;
+                    std::cout << "Hiding overlay window" << std::endl;
+                    break;
+                case 3: // Toggle Window
+                    g_toggleWidget = true;  // ← Use signal instead of direct toggle
                     break;
                 case 99: // Exit
                     g_shouldExit = true;
+                    std::cout << "Exit requested from tray" << std::endl;
                     break;
             }
         };
         
-        // Smart API update thread with change detection
+        // Smart API update thread
         std::thread apiThread([&]() {
             std::string lastThoughts = "";
             bool lastBusyStatus = false;
             std::vector<std::string> lastActiveApps;
             auto lastUpdateTime = std::chrono::steady_clock::now();
             
-            const int FORCED_UPDATE_SECONDS = 30;  // Force update every 30 seconds
-            const int QUICK_UPDATE_SECONDS = 5;    // Quick update after changes
+            const int FORCED_UPDATE_SECONDS = 30;
+            const int QUICK_UPDATE_SECONDS = 5;
             
             while (!g_shouldExit) {
                 detector.detectRunningApps();
@@ -383,7 +397,7 @@ int main(int argc, char* argv[]) {
                     if (appsChanged) changeReason += "apps ";
                     if (forceUpdate && changeReason.empty()) changeReason = "periodic ";
                     
-                    std::cout << "[API] Sending update (" << changeReason << "trim): " << jsonStr << std::endl;
+                    std::cout << "[API] Sending update (" << changeReason << "): " << jsonStr << std::endl;
                     
                     if (sendToVercelAPI(jsonStr, VERCEL_API_URL, API_KEY)) {
                         std::cout << "[API] ✓ Data sent successfully" << std::endl;
@@ -406,24 +420,40 @@ int main(int argc, char* argv[]) {
             }
         });
         
-        std::cout << "Application started successfully!" << std::endl;
+        std::cout << "All systems started. Running main loop..." << std::endl;
         
-        // Main loop
-#ifdef __linux__
+        // Enhanced main loop with widget toggle support
         while (!g_shouldExit) {
-            g_main_context_iteration(NULL, TRUE);
+            // Check for widget toggle signal
+            if (g_toggleWidget) {
+                g_toggleWidget = false;
+                if (windowVisible) {
+                    overlay->hide();
+                    windowVisible = false;
+                    std::cout << "Widget hidden via hotkey" << std::endl;
+                } else {
+                    overlay->show();
+                    windowVisible = true;
+                    std::cout << "Widget shown via hotkey" << std::endl;
+                }
+            }
+            
+            // Run GTK events
+            while (gtk_events_pending()) {
+                gtk_main_iteration();
+            }
+            
+            // Small sleep to prevent busy waiting
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-#else
-        overlay->messageLoop();
-#endif
         
         // Cleanup
         std::cout << "Shutting down..." << std::endl;
         g_shouldExit = true;
         
-        server.stop();
-        
         if (serverThread.joinable()) {
+            std::cout << "Stopping web server..." << std::endl;
+            server.stop();
             serverThread.join();
         }
         
@@ -431,15 +461,15 @@ int main(int argc, char* argv[]) {
             apiThread.join();
         }
         
-#ifdef __linux__
-        curl_global_cleanup();
-#endif
-        
     } catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-    
+
+#ifdef __linux__
+    curl_global_cleanup();
+#endif
+
     std::cout << "Personal Status Monitor - Exited cleanly" << std::endl;
     return 0;
 }

@@ -56,7 +56,7 @@ bool AutoStart::enable(const std::string& executablePath) {
     file << "Type=Application\n";
     file << "Name=Personal Status Monitor\n";
     file << "Comment=Desktop status widget for portfolio integration\n";
-    file << "Exec=" << executablePath << "\n";
+    file << "Exec=" << executablePath << " --minimized\n";  // ← Start minimized to tray
     file << "Icon=applications-system\n";
     file << "Terminal=false\n";
     file << "Hidden=false\n";
@@ -96,4 +96,50 @@ std::string AutoStart::getExecutablePath() {
     }
 #endif
     return "";
+}
+
+// Add this method to AutoStart.cpp
+bool AutoStart::createApplicationEntry(const std::string& executablePath) {
+#ifdef __linux__
+    // Create application desktop file for launcher visibility
+    std::string applications_dir = "/home/" + std::string(getenv("USER")) + "/.local/share/applications";
+    std::string desktop_file = applications_dir + "/personal-status-monitor.desktop";
+    
+    // Create applications directory if it doesn't exist
+    mkdir(applications_dir.c_str(), 0755);
+    
+    // Create .desktop file
+    std::ofstream file(desktop_file);
+    if (!file.is_open()) {
+        std::cerr << "Failed to create application desktop file: " << desktop_file << std::endl;
+        return false;
+    }
+    
+    file << "[Desktop Entry]\n";
+    file << "Version=1.0\n";
+    file << "Type=Application\n";
+    file << "Name=Personal Status Monitor\n";
+    file << "Comment=Desktop status widget for portfolio integration\n";
+    file << "GenericName=Status Widget\n";
+    file << "Exec=" << executablePath << "\n";
+    file << "Icon=applications-system\n";  // You can create a custom icon later
+    file << "Terminal=false\n";
+    file << "StartupNotify=false\n";
+    file << "Categories=Utility;System;Monitor;\n";
+    file << "Keywords=status;portfolio;widget;monitor;\n";
+    file << "StartupWMClass=personal-status-monitor\n";
+    
+    file.close();
+    
+    // Make it executable
+    chmod(desktop_file.c_str(), 0755);
+    
+    std::cout << "✅ Application entry created: " << desktop_file << std::endl;
+    
+    // Update desktop database so it appears in search immediately
+    system("update-desktop-database ~/.local/share/applications/ 2>/dev/null");
+    
+    return true;
+#endif
+    return false;
 }
