@@ -5,6 +5,12 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <thread>        
+#include <chrono>
+
+// Declare external global variables from main.cpp
+extern std::atomic<bool> g_shouldExit;
+extern std::atomic<bool> g_toggleWidget;  // ← Add this
 
 OverlayWindow_Wayland::OverlayWindow_Wayland()
     : window(nullptr)
@@ -86,7 +92,7 @@ void OverlayWindow_Wayland::createWidgets() {
     gtk_widget_set_margin_top(mainBox, 15);
     gtk_widget_set_margin_bottom(mainBox, 15);
     
-    // Title/Status section
+    // Title/Status section with close button
     GtkWidget* titleBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     
     // Status indicator
@@ -97,16 +103,22 @@ void OverlayWindow_Wayland::createWidgets() {
     GtkWidget* statusToggle = gtk_button_new_with_label("Toggle Status");
     g_signal_connect(statusToggle, "clicked", G_CALLBACK(onStatusToggled), this);
     
+    // Hide button (not close button)
+    GtkWidget* hideButton = gtk_button_new_with_label("—");  // ← Change symbol
+    gtk_widget_set_tooltip_text(hideButton, "Hide Widget (use tray or hotkey to show)");  // ← Update tooltip
+    g_signal_connect(hideButton, "clicked", G_CALLBACK(onCloseClicked), this);  // ← Keep same callback name for now
+    
     gtk_box_pack_start(GTK_BOX(titleBox), statusLabel, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(titleBox), statusToggle, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(titleBox), hideButton, FALSE, FALSE, 0);  // ← Update variable name
     
     // Thoughts section
     GtkWidget* thoughtsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     
-    GtkWidget* thoughtsTitle = gtk_label_new("💭 Click and type your thoughts:");  // ← Update label
+    GtkWidget* thoughtsTitle = gtk_label_new("💭 Click and type your thoughts:");
     gtk_widget_set_halign(thoughtsTitle, GTK_ALIGN_START);
     
-    // Thoughts entry - MAKE IT FOCUSABLE
+    // Thoughts entry - FOCUSABLE
     thoughtsEntry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(thoughtsEntry), "What are you working on?");
     
@@ -117,9 +129,6 @@ void OverlayWindow_Wayland::createWidgets() {
     // Connect signals for real-time updates
     g_signal_connect(thoughtsEntry, "changed", G_CALLBACK(onThoughtsChanged), this);
     g_signal_connect(thoughtsEntry, "activate", G_CALLBACK(onThoughtsChanged), this);
-    
-    // Add click handler to ensure focus
-    g_signal_connect(thoughtsEntry, "button-press-event", G_CALLBACK(onEntryClicked), this);
     
     gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsTitle, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(thoughtsBox), thoughtsEntry, FALSE, FALSE, 0);
@@ -192,6 +201,15 @@ void OverlayWindow_Wayland::applyStyles() {
         "}"
         "button:active {"
         "    background: linear-gradient(135deg, rgba(40, 40, 40, 0.9), rgba(30, 30, 30, 0.9));"
+        "}"
+        "button:last-child {"  // Hide button style
+        "    background: linear-gradient(135deg, rgba(100, 100, 50, 0.9), rgba(80, 80, 30, 0.9));"
+        "    min-width: 30px;"
+        "    padding: 4px 8px;"
+        "    font-size: 14px;"
+        "}"
+        "button:last-child:hover {"
+        "    background: linear-gradient(135deg, rgba(120, 120, 70, 0.9), rgba(100, 100, 50, 0.9));"
         "}"
         "box {"
         "    background-color: transparent;"
@@ -267,14 +285,30 @@ void OverlayWindow_Wayland::hide() {
 }
 
 void OverlayWindow_Wayland::messageLoop() {
-    std::cout << "Entering GTK main loop..." << std::endl;
+    std::cout << "Entering GTK message loop..." << std::endl;
     
-    // GTK 3 main loop
-    while (!shouldExit && gtk_main_level() >= 0) {
-        gtk_main_iteration_do(FALSE);
+    // Simplified message loop - main() now handles the primary loop
+    while (!shouldExit && !g_shouldExit) {
+        // Check for toggle signal
+        if (g_toggleWidget) {
+            g_toggleWidget = false;
+            if (isVisible) {
+                hide();
+            } else {
+                show();
+            }
+        }
+        
+        // Process GTK events
+        while (gtk_events_pending()) {
+            gtk_main_iteration_do(FALSE);
+        }
+        
+        // Small sleep
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     
-    std::cout << "Exited GTK main loop" << std::endl;
+    std::cout << "Exited GTK message loop" << std::endl;
 }
 
 void OverlayWindow_Wayland::setThoughtsManager(ThoughtsManager* mgr) {
@@ -407,4 +441,13 @@ gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userD
     // Force focus to the entry when clicked
     gtk_widget_grab_focus(widget);
     return FALSE; // Let other handlers process the event too
+}
+
+// Add this callback function
+void onCloseClicked(GtkWidget* widget, gpointer userData) {
+    auto* self = static_cast<OverlayWindow_Wayland*>(userData);
+    
+    // Simply hide the window instead of showing exit dialog
+    self->hide();
+    std::cout << "Widget hidden - use 'pkill -USR1 personal-status-monitor' or system tray to show again" << std::endl;
 }

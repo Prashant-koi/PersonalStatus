@@ -28,11 +28,10 @@ public:
     void messageLoop() override;
     void setThoughtsManager(ThoughtsManager* mgr) override;
 
-protected:
-    // GTK window components
+    // GTK window components (public for callback access)
     GtkWidget* window;
     GtkWidget* mainBox;
-    GtkWidget* thoughtsEntry;     // ← ADD this missing member
+    GtkWidget* thoughtsEntry;
     GtkWidget* statusLabel;
     GtkWidget* appsLabel;
     
@@ -45,9 +44,15 @@ protected:
     // Manager reference
     ThoughtsManager* thoughtsManager;
     
-    // Window state
+    // Window state (public for callback access)
     std::atomic<bool> isVisible;
     std::atomic<bool> shouldExit;
+
+    // Debouncing helper (move to public for callback access)
+    static gboolean onThoughtsDebounced(gpointer userData);
+
+protected:
+    // Remove onThoughtsDebounced from here - it's now in public section above
 
 private:
     // GTK initialization
@@ -67,21 +72,14 @@ private:
     // Helper methods
     std::string formatStatus(bool busy);
     std::string formatApps(const std::vector<std::string>& apps);
-    
-    // Debouncing helper
-    static gboolean onThoughtsDebounced(gpointer userData);
-    
-    // Friend functions for callbacks
-    friend void onStatusToggled(GtkWidget* widget, gpointer userData);
-    friend void onThoughtsChanged(GtkWidget* widget, gpointer userData);
-    friend void onAutoStartToggled(GtkWidget* widget, gpointer userData);
 };
 
 // Declare callback functions outside the class
 void onStatusToggled(GtkWidget* widget, gpointer userData);
 void onThoughtsChanged(GtkWidget* widget, gpointer userData);
 void onAutoStartToggled(GtkWidget* widget, gpointer userData);
-gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userData);  // ← Add this
+void onCloseClicked(GtkWidget* widget, gpointer userData);
+gboolean onEntryClicked(GtkWidget* widget, GdkEventButton* event, gpointer userData);
 
 #endif // __linux__
 #endif // OVERLAY_WINDOW_WAYLAND_H

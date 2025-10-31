@@ -7,13 +7,6 @@
 #include <atomic>
 #include <csignal>
 
-#ifdef _WIN32
-#include <windows.h>
-#include <winhttp.h>
-#pragma comment(lib, "winhttp.lib")
-#include "windows/SetupDialog_Win32.h"
-#endif
-
 #ifdef __linux__
 #include <gtk/gtk.h>
 #include <curl/curl.h>
@@ -30,10 +23,16 @@
 #include "common/AutoStart.h"
 
 std::atomic<bool> g_shouldExit(false);
+std::atomic<bool> g_toggleWidget(false);  // ← Add this for widget toggle
 
 void signalHandler(int signal) {
-    std::cout << "Received signal " << signal << ", shutting down..." << std::endl;
-    g_shouldExit = true;
+    if (signal == SIGINT || signal == SIGTERM) {
+        std::cout << "Received signal " << signal << ", shutting down..." << std::endl;
+        g_shouldExit = true;
+    } else if (signal == SIGUSR1) {
+        std::cout << "Received SIGUSR1, toggling widget visibility..." << std::endl;
+        g_toggleWidget = true;  // ← Toggle widget instead of exit
+    }
 }
 
 #ifdef __linux__
@@ -222,9 +221,6 @@ int main(int argc, char* argv[]) {
 
 #ifdef __linux__
     std::cout << "Personal Status Monitor - Starting..." << std::endl;
-    
-    // Initialize GTK3 and curl
-    std::cout << "Initializing GTK3..." << std::endl;
     gtk_init(&argc, &argv);
     curl_global_init(CURL_GLOBAL_DEFAULT);
     std::cout << "GTK3 and curl initialized" << std::endl;
@@ -233,6 +229,7 @@ int main(int argc, char* argv[]) {
     // Setup signal handlers
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
+    std::signal(SIGUSR1, signalHandler);  // ← Add hotkey signal handler
 
     // Setup application
     std::cout << "Personal Status Monitor - Desktop Widget" << std::endl;
@@ -292,10 +289,12 @@ int main(int argc, char* argv[]) {
         }
         
         // Add tray menu items
-        tray->addMenuItem("Show Status Widget", 1);
-        tray->addMenuItem("Hide Status Widget", 2);
+        tray->addMenuItem("📱 Show Status Widget", 1);
+        tray->addMenuItem("🫥 Hide Status Widget", 2);
         tray->addSeparator();
-        tray->addMenuItem("Exit", 99);
+        tray->addMenuItem("⚙️ Toggle Widget (Hotkey: SIGUSR1)", 3);  // ← Add toggle option
+        tray->addSeparator();
+        tray->addMenuItem("❌ Exit Application", 99);
         
         // Create overlay window
         std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
@@ -327,6 +326,9 @@ int main(int argc, char* argv[]) {
                     overlay->hide();
                     windowVisible = false;
                     std::cout << "Hiding overlay window" << std::endl;
+                    break;
+                case 3: // Toggle Window
+                    g_toggleWidget = true;  // ← Use signal instead of direct toggle
                     break;
                 case 99: // Exit
                     g_shouldExit = true;
@@ -420,8 +422,30 @@ int main(int argc, char* argv[]) {
         
         std::cout << "All systems started. Running main loop..." << std::endl;
         
-        // Run the GTK main loop (this keeps the app alive)
-        overlay->messageLoop();
+        // Enhanced main loop with widget toggle support
+        while (!g_shouldExit) {
+            // Check for widget toggle signal
+            if (g_toggleWidget) {
+                g_toggleWidget = false;
+                if (windowVisible) {
+                    overlay->hide();
+                    windowVisible = false;
+                    std::cout << "Widget hidden via hotkey" << std::endl;
+                } else {
+                    overlay->show();
+                    windowVisible = true;
+                    std::cout << "Widget shown via hotkey" << std::endl;
+                }
+            }
+            
+            // Run GTK events
+            while (gtk_events_pending()) {
+                gtk_main_iteration();
+            }
+            
+            // Small sleep to prevent busy waiting
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
         
         // Cleanup
         std::cout << "Shutting down..." << std::endl;
