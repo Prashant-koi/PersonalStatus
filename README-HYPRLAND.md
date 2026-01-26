@@ -7,7 +7,7 @@
 
 A real-time desktop widget for Linux that shows your current thoughts and active applications on your portfolio website.
 
-> **✨ This is the Linux/Hyprland implementation** featuring native Wayland support with GTK-layer-shell!
+> ** This is the Linux/Hyprland implementation** featuring native Wayland support with GTK-layer-shell!
 
 ## 🌟 Features
 
@@ -31,7 +31,7 @@ A real-time desktop widget for Linux that shows your current thoughts and active
 - **Focus Management**: Click-to-focus input field with proper keyboard handling
 - **Persistent Settings**: Remembers your API configuration between sessions
 
-## 🚀 Quick Start
+## Quick Start
 
 ### **Prerequisites**
 - **Hyprland/Wayland** compositor
@@ -81,7 +81,7 @@ In the widget overlay:
 1. Click **"Enable"** next to "🚀 Auto-start"
 2. The app will start automatically with your desktop session (minimized to tray)
 
-## 🎯 Usage
+## Usage
 
 ### **Widget Control**
 - **Show Widget**: Right-click tray icon → "Show Status Widget"
@@ -111,7 +111,7 @@ chmod +x ~/.local/bin/toggle-status-widget
 # Then bind it in your compositor/hotkey manager
 ```
 
-## 🌐 Portfolio Integration
+## Portfolio Integration
 
 ### **Backend Setup (Required)**
 
@@ -154,7 +154,7 @@ export function StatusWidget({ status }) {
       </div>
       
       <div className="thoughts">
-        💭 {status.thoughts || 'Just working on some cool stuff...'}
+         {status.thoughts || 'Just working on some cool stuff...'}
       </div>
       
       <div className="apps">
@@ -232,7 +232,7 @@ Categories=Utility;System;
 EOF
 ```
 
-## 🎨 Customization
+## Customization
 
 ### **Widget Appearance**
 The widget uses CSS styling that can be modified in the source code:
@@ -278,7 +278,7 @@ Make sure your Wayland compositor supports system tray:
 # [API] ✗ Failed to send data
 ```
 
-## 📦 Building from Source
+## Building from Source
 
 ### **Dependencies**
 ```bash
@@ -303,7 +303,7 @@ cmake ..
 make -j$(nproc)
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### **Component Overview**
 ```
@@ -352,7 +352,7 @@ make -j$(nproc)
 - **CMake**: Cross-platform build system
 - **C++17**: Modern C++ features with RAII and smart pointers
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -360,7 +360,7 @@ make -j$(nproc)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
