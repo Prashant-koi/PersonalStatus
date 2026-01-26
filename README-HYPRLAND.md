@@ -9,7 +9,7 @@ A real-time desktop widget for Linux that shows your current thoughts and active
 
 > ** This is the Linux/Hyprland implementation** featuring native Wayland support with GTK-layer-shell!
 
-## 🌟 Features
+## Features
 
 ### **🖥️ Desktop Integration**
 - **Native Wayland Support**: Built with GTK3 + gtk-layer-shell for seamless Hyprland integration
