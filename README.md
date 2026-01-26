@@ -11,31 +11,31 @@ A real-time desktop widget that shows your current thoughts and active applicati
 
 Would appreciate a GitHub star if you are reading this :)
 
-## 🌟 Features (v0.1.0 - Windows Release)
+## Features (v0.1.0 - Windows Release)
 
 This app creates a desktop widget that runs in the background with system tray integration:
 
--   📝 **Real-time Thoughts Sharing**: Type what you're thinking, and visitors see it instantly on your portfolio.
--   🟢 **Availability Status**: Easily toggle between "Free" and "Busy" states.
--   🖥️ **Application Monitoring**: Automatically detects and displays key applications you're currently using (e.g., VS Code, browsers).
--   🚀 **Live Portfolio Integration**: Updates your website (via a Vercel API endpoint or similar) every few seconds.
--   🔒 **Secure API Communication**: Uses API key authentication for sending data to your portfolio.
--   💾 **Persistent Settings**: Remembers your API endpoint and key (securely stored in Windows Registry).
--   ✨ **User-Friendly Setup**:
+-   **Real-time Thoughts Sharing**: Type what you're thinking, and visitors see it instantly on your portfolio.
+-   **Availability Status**: Easily toggle between "Free" and "Busy" states.
+-   **Application Monitoring**: Automatically detects and displays key applications you're currently using (e.g., VS Code, browsers).
+-   **Live Portfolio Integration**: Updates your website (via a Vercel API endpoint or similar) every few seconds.
+-   **Secure API Communication**: Uses API key authentication for sending data to your portfolio.
+-   **Persistent Settings**: Remembers your API endpoint and key (securely stored in Windows Registry).
+-    **User-Friendly Setup**:
     *   **First-Run Setup Dialog**: Guides users through initial configuration.
     *   **Settings Dialog**: Allows users to update API endpoint and key later via the overlay window.
--   🎯 **System Tray Integration (Windows)**:
+-   **System Tray Integration (Windows)**:
     *   Runs unobtrusively in the system tray (notification area).
     *   Left-click tray icon to show/hide the main status window.
     *   Right-click tray icon for a context menu (Show/Hide/Exit).
--   🎨 **Customizable Overlay Window**:
+-   **Customizable Overlay Window**:
     *   Semi-transparent, draggable window to display and input status.
     *   Includes "Settings" button to reconfigure API details.
--   🧹 **Graceful Shutdown**: Ensures all threads and resources are cleaned up properly on exit.
--   📦 **Standalone Executable (Windows)**: Distributed as a single `.exe` file, statically linked with no external dependencies required.
--   🌍 **Cross-Platform Foundation**: Built with C++17 and CMake, with Linux support planned.
+-   **Graceful Shutdown**: Ensures all threads and resources are cleaned up properly on exit.
+-   **Standalone Executable (Windows)**: Distributed as a single `.exe` file, statically linked with no external dependencies required.
+-   **Cross-Platform Foundation**: Built with C++17 and CMake, with Linux support planned.
 
-## 🚀 Getting Started (Windows Users)
+## Getting Started (Windows Users)
 
 ### **Quick Start (Recommended)**
 1. Download the latest `PersonalStatusMonitor.zip` from [Releases](https://github.com/Prashant-koi/PersonalStatus/releases)
@@ -544,7 +544,7 @@ Last updated: 2:34:27 PM
 }
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### **System Overview**
 ```
@@ -581,12 +581,12 @@ Last updated: 2:34:27 PM
               │              Vercel API Endpoint                    │
               │        https://your-portfolio.vercel.app            │
               │                                                     │
-              │  POST /api/status (🔒 API Key Required)            │
+              │  POST /api/status ( API Key Required)               │
               │  • Updates current status                           │
               │  • Validates authentication                         │
               │  • Stores in memory                                 │
               │                                                     │
-              │  GET /api/status (🌍 Public Access)               │
+              │  GET /api/status (Public Access)                    │
               │  • Returns current status                           │
               │  • Portfolio visitors can view                      │
               │  • No authentication needed                         │
@@ -646,7 +646,7 @@ public:
 
 #### **Security Model**
 ```
-┌─────────────────┐    🔒 API Key    ┌─────────────────┐
+┌─────────────────┐    API Key        ┌─────────────────┐
 │   Your C++ App  │ ────────────────► │  Vercel API     │
 │   (Private)     │    POST /status   │  (Authenticated)│
 └─────────────────┘                   └─────────────────┘
@@ -685,12 +685,5 @@ PersonalStatus/
 └── README.md                     # This file
 ```
 
-### **Modern C++ Features Used**
-- ✅ **C++17 Standard** - Modern language features
-- ✅ **RAII** - Automatic resource management
-- ✅ **Smart Pointers** - Memory safety
-- ✅ **Abstract Base Classes** - Clean interfaces
-- ✅ **Factory Pattern** - Platform-specific object creation
-- ✅ **std::thread** - Cross-platform threading
 - ✅ **Conditional Compilation** - `#ifdef` for platform code
 - ✅ **CMake** - Modern build system
