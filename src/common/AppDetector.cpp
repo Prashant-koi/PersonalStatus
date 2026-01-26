@@ -12,6 +12,8 @@
 #include <cctype>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <vector>
+#include <numeric>
 #endif
 
 AppDetector::AppDetector() {
@@ -32,13 +34,39 @@ AppDetector::AppDetector() {
     // Linux app list - more specific process names
     apps = {
         {"Firefox Browser", "firefox", false},
-        {"Brave Browser", "brave", false},  // More specific
+        {"Brave Browser", "brave", false},
         {"Chromium", "chromium", false},
         {"Visual Studio Code", "code", false},
-        {"Rofi", "rofi", false}
     };
 #endif
 }
+
+#if __linux__
+// Levenshtein distance for fuzzy matching
+static int levenshtein(const std::string& a, const std::string& b) {
+    const size_t m = a.size(), n = b.size();
+    std::vector<int> prev(n + 1), cur(n + 1);
+    std::iota(prev.begin(), prev.end(), 0);
+    for (size_t i = 1; i <= m; ++i) {
+        cur[0] = static_cast<int>(i);
+        for (size_t j = 1; j <= n; ++j) {
+            int cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+            cur[j] = std::min({ prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost });
+        }
+        std::swap(prev, cur);
+    }
+    return prev[n];
+}
+
+static bool fuzzyMatch(const std::string& lhs, const std::string& rhs, int maxDistance = 2) {
+    std::string l = lhs, r = rhs;
+    std::transform(l.begin(), l.end(), l.begin(), ::tolower);
+    std::transform(r.begin(), r.end(), r.begin(), ::tolower);
+    int dist = levenshtein(l, r);
+    // also allow substring containment as a cheap win
+    return dist <= maxDistance || l.find(r) != std::string::npos || r.find(l) != std::string::npos;
+}
+#endif
 
 void AppDetector::detectRunningApps() {
     // Reset all apps to not running
@@ -110,8 +138,7 @@ void AppDetector::detectRunningApps() {
             
             // Check against our app list
             for (auto& app : apps) {
-                if (process_name == app.processName) {
-                    // Additional check: make sure it's not a background daemon
+                if (fuzzyMatch(process_name, app.processName)) {  // ← fuzzy compare
                     if (isActiveProcess(pid_str)) {
                         app.running = true;
                     }
@@ -194,29 +221,19 @@ bool AppDetector::isProcessRunning(const std::string& processName) const {
     
     struct dirent* entry;
     while ((entry = readdir(proc_dir)) != nullptr) {
-        // Check if directory name is numeric (PID)
         if (entry->d_type == DT_DIR && std::isdigit(entry->d_name[0])) {
             std::string cmdline_path = "/proc/" + std::string(entry->d_name) + "/cmdline";
             std::ifstream cmdline_file(cmdline_path);
             
             if (cmdline_file.is_open()) {
                 std::string cmdline;
-                std::getline(cmdline_file, cmdline, '\0'); // Read until null terminator
+                std::getline(cmdline_file, cmdline, '\0');
                 
-                // Extract executable name
                 size_t last_slash = cmdline.find_last_of('/');
                 std::string exec_name = (last_slash != std::string::npos) ? 
                     cmdline.substr(last_slash + 1) : cmdline;
                 
-                // Convert to lowercase for comparison
-                std::string exec_lower = exec_name;
-                std::string process_lower = processName;
-                std::transform(exec_lower.begin(), exec_lower.end(), exec_lower.begin(), ::tolower);
-                std::transform(process_lower.begin(), process_lower.end(), process_lower.begin(), ::tolower);
-                
-                // Check for match
-                if (exec_lower.find(process_lower) != std::string::npos || 
-                    process_lower.find(exec_lower) != std::string::npos) {
+                if (fuzzyMatch(exec_name, processName)) {  // ← fuzzy compare
                     closedir(proc_dir);
                     return true;
                 }
