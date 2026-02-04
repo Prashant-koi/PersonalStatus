@@ -1,4 +1,5 @@
 #include "OverlayWindow_Wayland.h"
+#include "../common/AppDetector.h"
 #include "../common/AutoStart.h"
 #include "../common/ThoughtsManager.h"
 #include <iostream>
@@ -20,6 +21,7 @@ OverlayWindow_Wayland::OverlayWindow_Wayland()
     , appsLabel(nullptr)
     , updateTimerId(0)
     , thoughtsManager(nullptr)
+    , appDetector(nullptr)
     , isVisible(false)
     , shouldExit(false)
 {
@@ -311,11 +313,25 @@ void OverlayWindow_Wayland::setThoughtsManager(ThoughtsManager* mgr) {
     std::cout << "ThoughtsManager set" << std::endl;
 }
 
+void OverlayWindow_Wayland::setAppDetector(AppDetector* detector) {
+    appDetector = detector;
+    std::cout << "AppDetector set" << std::endl;
+}
+
 void OverlayWindow_Wayland::updateDisplay() {
     if (!thoughtsManager || !window) return;
     
     // Update apps only (thoughts are handled by the entry field)
-    std::vector<std::string> apps;  // This should be populated by AppDetector
+    std::vector<std::string> apps;
+    if (appDetector) {
+        auto running = appDetector->getRunningApps();
+        apps.reserve(running.size());
+        for (const auto& app : running) {
+            // Prefer friendly name when available, otherwise fall back to process name
+            apps.push_back(app.name.empty() ? app.processName : app.name);
+        }
+    }
+
     std::string appsText = formatApps(apps);
     gtk_label_set_text(GTK_LABEL(appsLabel), appsText.c_str());
 }

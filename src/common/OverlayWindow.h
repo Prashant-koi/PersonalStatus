@@ -5,6 +5,8 @@
 #include <string>
 #include "ThoughtsManager.h"
 
+class AppDetector;  // Forward declaration for optional app display
+
 class OverlayWindow {
     public:
 
@@ -17,6 +19,8 @@ class OverlayWindow {
         virtual void hide() = 0;
         virtual void messageLoop() = 0;
         virtual void setThoughtsManager(ThoughtsManager* manager) = 0;
+        // Optional hook for showing running apps; default no-op for platforms that ignore it
+        virtual void setAppDetector(AppDetector* /*detector*/) {}
 
         //Factory Method
         static OverlayWindow* createPlatformWindow();
