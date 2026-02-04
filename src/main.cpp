@@ -299,6 +299,7 @@ int main(int argc, char* argv[]) {
         // Create overlay window
         std::unique_ptr<OverlayWindow> overlay(OverlayWindow::createPlatformWindow());
         overlay->setThoughtsManager(&thoughtsManager);
+        overlay->setAppDetector(&detector);
         
         if (!overlay->create()) {
             std::cerr << "Failed to create overlay window" << std::endl;

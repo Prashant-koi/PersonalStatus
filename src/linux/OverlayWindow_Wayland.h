@@ -12,6 +12,8 @@
 #include <atomic>
 #include <vector>
 
+class AppDetector;
+
 /**
  * Wayland/Hyprland implementation of overlay window
  * Uses GTK 3 + gtk-layer-shell for desktop overlay
@@ -27,6 +29,7 @@ public:
     void hide() override;
     void messageLoop() override;
     void setThoughtsManager(ThoughtsManager* mgr) override;
+    void setAppDetector(AppDetector* detector) override;
 
     // GTK window components (public for callback access)
     GtkWidget* window;
@@ -40,6 +43,7 @@ public:
     
     // Manager reference
     ThoughtsManager* thoughtsManager;
+    AppDetector* appDetector;
     
     // Window state (public for callback access)
     std::atomic<bool> isVisible;
